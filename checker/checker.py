@@ -5,10 +5,15 @@ from pathlib import Path
 
 class Answer:
     class Constraint:
-        pk_regex = re.compile(r"PRIMARY\s+KEY\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\);")
-        fk_regex = re.compile(r"FOREIGN\s+KEY\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\)\s+REFERENCES\s(?P<ref_table>\w+)\((?P<ref_fields>\w+(?:,\s*\w+)*)\);")
-        uk_regex = re.compile(r"UNIQUE\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\);")
-        idx_regex = re.compile(r"INDEX\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\);")
+        pk_regex = re.compile(
+            r"PRIMARY\s+KEY\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\);")
+        fk_regex = re.compile(
+            r"FOREIGN\s+KEY\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\)\s+REFERENCES\s(?P<ref_table>\w+)\((?P<ref_fields>\w+(?:,\s*\w+)*)\);")
+        uk_regex = re.compile(
+            r"UNIQUE\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\);")
+        idx_regex = re.compile(
+            r"INDEX\s+(?P<name>\w*)\((?P<fields>\w+(?:,\s*\w+)*)\);")
+
         def __init__(self, lines) -> None:
             self.pk = None
             self.fks = []
@@ -16,7 +21,6 @@ class Answer:
             self.idx = []
             if lines:
                 self.parse_lines(lines)
-
 
         def parse_lines(self, lines):
             for line in lines:
@@ -32,9 +36,11 @@ class Answer:
                 elif self.fk_regex.match(line):
                     m = self.fk_regex.match(line)
                     fields = m.group("fields").replace(" ", "").split(",")
-                    ref_fields = m.group("ref_fields").replace(" ", "").split(",")
+                    ref_fields = m.group("ref_fields").replace(
+                        " ", "").split(",")
                     if len(fields) != len(ref_fields):
-                        raise ValueError(f"{len(fields)} fields mismatches {len(ref_fields)} refer fields")
+                        raise ValueError(
+                            f"{len(fields)} fields mismatches {len(ref_fields)} refer fields")
                     self.fks.append({
                         "name": m.group("name"),
                         "table": m.group("ref_table"),
@@ -90,7 +96,8 @@ class Answer:
         self.colume_order = colume_order
         self.headers = lines[0].split(",") if lines else []
         # Ignore order key not in the output headers
-        self.order_by = order_by if order_by and all(field in self.headers for field in order_by) else None
+        self.order_by = order_by if order_by and all(
+            field in self.headers for field in order_by) else None
         self.asc = asc
         self.constraint = None
         if is_desc:
@@ -105,7 +112,7 @@ class Answer:
                 self.headers[i]: val for i, val in enumerate(line.split(','))
             } for line in lines[1:]
         ]
-    
+
     def to_regular_data(self):
         regular_headers = sorted(self.headers)
         return tuple(tuple(each[h] for h in regular_headers) for each in self.data)
@@ -118,7 +125,8 @@ class Answer:
         assert len(self.data) == len(other.data)
         assert self.to_regular_data() == other.to_regular_data()
         if self.order_by:
-            keys = [tuple(each[field] for field in self.order_by) for each in other.data]
+            keys = [tuple(each[field] for field in self.order_by)
+                    for each in other.data]
             if self.asc:
                 for i in range(1, len(keys)):
                     assert keys[i - 1] <= keys[i]
@@ -141,11 +149,12 @@ class TestCase:
         self.score = score
         self.name = name
         self.desc = desc
-    
+
     def load_ans(self, text: str) -> bool:
         lines = [l.strip() for l in text.splitlines()]
         if not (lines.count("@BEGIN") == lines.count("@END") == len(self.sqls)):
-            raise ValueError(f'ans file has {lines.count("@BEGIN")} BEGIN, {lines.count("@END")} END when in file has {len(self.sqls)} sqls')
+            raise ValueError(
+                f'ans file has {lines.count("@BEGIN")} BEGIN, {lines.count("@END")} END when in file has {len(self.sqls)} sqls')
         for i in range(len(self.sqls)):
             begin = lines.index("@BEGIN")
             end = lines.index("@END")
@@ -224,13 +233,16 @@ class Checker:
         except Exception:
             from traceback import print_exc
             print_exc()
-    
+
     def _run_case(self, _case):
         for point in _case.test_points:
-            self.prog.stdin.write(point.sql + "\n", flush=True)
+            self.prog.stdin.write(point.sql + "\n")
+            self.prog.stdin.flush()
             lines = []
             while True:
+                print("wait for next line")
                 line: str = self.prog.stdout.readline()
+                print("read line:", line)
                 if line.startswith("@"):
                     break
                 lines.append(line)
@@ -252,10 +264,16 @@ class Checker:
                 return False
             # run depend_case successfully: continue
         try:
+            print("run case", name)
             self._run_case(_case)
+            print("case done")
             self.scores += _case.score
             self.passed_cases.add(name)
             return True
+        except KeyboardInterrupt:
+            print("get here")
+            self.prog.kill()
+            raise
         except Exception:
             from traceback import print_exc
             print_exc()
@@ -281,6 +299,6 @@ class Checker:
             pass
         except subprocess.TimeoutExpired:
             self.kill()
-    
+
     def kill(self):
         self.prog.kill()
