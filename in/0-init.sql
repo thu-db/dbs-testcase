@@ -1,4 +1,4 @@
--- @Name: 0-init
+-- @Name: init
 -- @Depends: 
 -- @Description: Just an empty file to finish the test
--- @Scores: 0
+-- @Score: 0

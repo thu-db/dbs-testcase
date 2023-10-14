@@ -1,4 +1,4 @@
--- @Name: system
+-- @Name: table
 -- @Depends: init
 -- @Description: Check basic table-level operation
 -- @Score: 10

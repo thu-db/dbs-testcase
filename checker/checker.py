@@ -88,14 +88,14 @@ class Answer:
         # Note: is_desc means "is description", asc means "ascend"
         self.is_desc = is_desc
         self.colume_order = colume_order
-        self.headers = lines[0].split(",")
+        self.headers = lines[0].split(",") if lines else []
         # Ignore order key not in the output headers
-        self.order_by = tuple(field for field in order_by if field in self.headers) if order_by else None
+        self.order_by = order_by if order_by and all(field in self.headers for field in order_by) else None
         self.asc = asc
         self.constraint = None
         if is_desc:
-            blank_line = lines.index("")
-            if blank_line > 0:
+            if "" in lines:
+                blank_line = lines.index("")
                 self.constraint = Answer.Constraint(lines[blank_line + 1:])
                 lines = lines[:blank_line]
             else:
@@ -149,7 +149,7 @@ class TestCase:
         for i in range(len(self.sqls)):
             begin = lines.index("@BEGIN")
             end = lines.index("@END")
-            ans_lines = lines[begin + 1, end]
+            ans_lines = lines[begin + 1: end]
             is_desc = False
             select_star = False
             order_by = None
@@ -176,7 +176,7 @@ class Checker:
         self.prog: subprocess.Popen = None
         self.cases = {}
         self.scores = 0
-        self.scores_total = 0
+        self.total_scores = 0
         self.passed_cases = set()
         self.failed_cases = set()
         self.skipped_cases = set()
@@ -185,7 +185,7 @@ class Checker:
     def print_depends(self):
         lines = ["flowchart BT"]
         lines += list(self.cases.keys())
-        for item in self.cases.values:
+        for item in self.cases.values():
             for name in item.deps:
                 lines.append(f"{item.name} --> {name}")
         print("\n    ".join(lines))
@@ -209,9 +209,9 @@ class Checker:
             text = file.read()
         item = TestCase(
             name=re.search(r"-- @Name: (.*)", text).group(1),
-            deps=re.search(r"-- @Depends: (.*)", text).group(1),
+            deps=re.search(r"-- @Depends: (.*)", text).group(1).split(),
             desc=re.search(r"-- @Description: (.*)", text).group(1),
-            score=re.search(r"-- @Score: (.*)", text).group(1),
+            score=int(re.search(r"-- @Score: (.*)", text).group(1)),
             sqls=re.findall(r"^[^-].*;\s*$", text, re.MULTILINE),
         )
         with open(ans_path) as file:
@@ -219,7 +219,7 @@ class Checker:
         try:
             item.load_ans(text)
             self.cases[item.name] = item
-            self.scores_total += item.score
+            self.total_scores += item.score
             print("read", len(item.test_points), "test points for", item.name)
         except Exception:
             from traceback import print_exc
@@ -263,6 +263,7 @@ class Checker:
             return False
 
     def run(self):
+        print(self.cases)
         for name in self.cases:
             self.run_case(name)
         return self.scores
