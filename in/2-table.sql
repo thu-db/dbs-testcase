@@ -1,7 +1,7 @@
 -- @Name: system
 -- @Depends: init
 -- @Description: Check basic table-level operation
--- @Score: 
+-- @Score: 10
 
 
 CREATE DATABASE DATASET;
@@ -27,11 +27,9 @@ CREATE TABLE LINEITEM (L_ORDERKEY INT NOT NULL, L_PARTKEY INT NOT NULL, L_SUPPKE
 
 -- Check desc schema
 DESC LINEITEM;
--- 3pt
 
 -- Check list table names
 SHOW TABLES;
--- 1pt
 
 USE DB;
 
@@ -41,12 +39,10 @@ CREATE TABLE TBL (a INT NOT NULL, b VARCHAR(16) NOT NULL, c FLOAT NOT NULL);
 CREATE TABLE TBL2 (a INT NOT NULL, b VARCHAR(16) NOT NULL, c FLOAT NOT NULL);
 SHOW TABLES;
 DESC TBL;
--- 3pt
 
 
 -- Check drop table 
 DROP TABLE TBL2;
 SHOW TABLES;
--- 3pt
 
 

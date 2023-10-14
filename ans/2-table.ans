@@ -95,6 +95,7 @@ TBL2
 @END
 
 @SQL: DESC TBL;
+@DESC
 @BEGIN
 Field,Type,Null,Default
 a,INT,NO,NULL
