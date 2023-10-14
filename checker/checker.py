@@ -75,7 +75,7 @@ class Answer:
             for i in range(len(self.fks)):
                 if self.fks[i]["name"]:
                     assert self.fks[i]["name"] == other.fks[i]["name"]
-                assert self.fks[i]["fields"] == other.fks[i]["fileds"]
+                assert self.fks[i]["fields"] == other.fks[i]["fields"]
                 assert self.fks[i]["ref_fields"] == other.fks[i]["ref_fields"]
             # check uk
             assert len(self.uks) == len(other.uks)
@@ -140,6 +140,11 @@ class TestPoint:
         self.sql: str = sql
         self.ans: Answer = ans
 
+def count_n_generator(n):
+    while True:
+        for _ in range(n - 1):
+            yield False
+        yield True
 
 class TestCase:
     def __init__(self, name, deps, score, desc, sqls) -> None:
@@ -168,12 +173,12 @@ class TestCase:
                     is_desc = True
                 elif line == "@STAR":
                     select_star = True
-                elif line.startswith("@ORDER "):
+                elif line.startswith("@ORDER: "):
                     order_by = line.split()[1:]
                 elif line == "@ASC":
                     asc = True
             self.test_points.append(TestPoint(
-                sql=self.sqls[i],
+                sql=self.sqls[i].strip(),
                 ans=Answer(ans_lines, is_desc, not select_star, order_by, asc),
             ))
             lines = lines[end + 1:]
@@ -189,6 +194,8 @@ class Checker:
         self.passed_cases = set()
         self.failed_cases = set()
         self.skipped_cases = set()
+        # On windows kill() is exactly terminate(), so record the running states manually
+        self.runnning = False
         self.start()
 
     def print_depends(self):
@@ -229,25 +236,29 @@ class Checker:
             item.load_ans(text)
             self.cases[item.name] = item
             self.total_scores += item.score
-            print("read", len(item.test_points), "test points for", item.name)
+            print("[INFO] read", len(item.test_points), "test points for", item.name)
         except Exception:
             from traceback import print_exc
             print_exc()
 
     def _run_case(self, _case):
+        # Restart the killed process
+        if self.prog.poll():
+            self.start()
         for point in _case.test_points:
+            # print("[DEBUG] run sql:" point.sql)
             self.prog.stdin.write(point.sql + "\n")
             self.prog.stdin.flush()
             lines = []
             while True:
-                print("wait for next line")
                 line: str = self.prog.stdout.readline()
-                print("read line:", line)
                 if line.startswith("@"):
                     break
-                lines.append(line)
+                # Note that readline will contains the "\n"
+                lines.append(line.strip())
+            # print("[DEBUG] read output", lines)
             ans: Answer = point.ans
-            out = Answer(lines, ans.is_desc, ans.colume_order, ans.order_by)
+            out = Answer(lines, ans.is_desc, ans.colume_order, ans.order_by, ans.asc)
             ans.check(out)
 
     def run_case(self, name):
@@ -264,41 +275,50 @@ class Checker:
                 return False
             # run depend_case successfully: continue
         try:
-            print("run case", name)
+            print("[INFO] run case", name, "...", end=" ")
             self._run_case(_case)
-            print("case done")
             self.scores += _case.score
             self.passed_cases.add(name)
+            print("passed")
             return True
         except KeyboardInterrupt:
-            print("get here")
-            self.prog.kill()
+            print()
+            self.kill()
             raise
         except Exception:
+            print()
             from traceback import print_exc
             print_exc()
+            if self.prog.poll():
+                self.runnning = False
             self.failed_cases.add(name)
             return False
 
     def run(self):
-        print(self.cases)
+        exit_counter = count_n_generator(5)
         for name in self.cases:
             self.run_case(name)
+            if next(exit_counter):
+                self.exit()
         return self.scores
 
     def start(self):
         self.prog = subprocess.Popen(self.cmd,
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf-8')
+        self.runnning = True
 
     def exit(self):
         try:
-            self.prog.stdin.write("exit\n", flush=True)
+            self.prog.stdin.write("exit\n")
+            self.prog.stdin.flush()
             # If exit can not finish in 1minutes, it will kill the process
             self.prog.wait(60)
         except (OSError, BrokenPipeError):
             pass
         except subprocess.TimeoutExpired:
             self.kill()
+        self.runnning = False
 
     def kill(self):
         self.prog.kill()
+        self.runnning = False
