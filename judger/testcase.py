@@ -76,18 +76,14 @@ class Constraint:
         assert_eq("Check primary key existence",
                   bool(self.pk), bool(other.pk))
         if self.pk is not None:
-            if self.pk["name"]:
-                assert_eq("Check primary key name",
-                          self.pk["name"], other.pk["name"])
+            # self.pk["name"] and assert_eq("Check primary key name", self.pk["name"], other.pk["name"])
             assert_eq("Check primary key fields",
                       self.pk["fields"], other.pk["fields"])
         # check fk
         assert_eq("Check foreign keys number",
                   len(self.fks), len(other.fks))
         for fk, ofk in zip(self.fks, other.fks):
-            if fk["name"]:
-                assert_eq("Check foreign key name",
-                          fk["name"], ofk["name"])
+            # fk["name"] and assert_eq("Check foreign key name", fk["name"], ofk["name"])
             assert_eq("Check foreign key fields",
                       fk["fields"], ofk["fields"])
             assert_eq("Check foreign key table",
@@ -97,15 +93,13 @@ class Constraint:
         # check uk
         assert_eq("Check union keys number", len(self.uks), len(other.uks))
         for uk, ouk in zip(self.uks, other.uks):
-            if uk["name"]:
-                assert_eq("Check union key name", uk["name"], ouk["name"])
+            # uk["name"] and assert_eq("Check union key name", uk["name"], ouk["name"])
             assert_eq("Check union key fields",
                       uk["fields"], ouk["fileds"])
         # check idx
         assert_eq("Check index number", len(self.idx), len(other.idx))
         for idx, oidx in zip(self.idx, other.idx):
-            if idx["name"]:
-                assert_eq("Checker index name", idx["name"], oidx["name"])
+            # idx["name"] and assert_eq("Checker index name", idx["name"], oidx["name"])
             assert_eq("Check index fields", idx["fields"], oidx["fileds"])
 
 
@@ -132,18 +126,20 @@ class Answer:
 
     def to_regular_data(self):
         regular_headers = sorted(self.headers)
-        return tuple(tuple(each[h] for h in regular_headers) for each in self.data)
+        return sorted(",".join(each[h] for h in regular_headers) for each in self.data)
 
     def check(self, other: "Answer"):
         if self.flags.is_desc:
             self.constraint.check(other.constraint)
-        assert len(self.headers) == len(other.headers)
+        assert_eq("Check columns count", len(self.headers), len(other.headers))
         if self.flags.colume_order:
-            assert self.headers == other.headers
+            assert_eq("Check headers tuple", self.headers, other.headers)
         else:
-            assert set(self.headers) == set(other.headers)
-        assert len(self.data) == len(other.data)
-        assert self.to_regular_data() == other.to_regular_data()
+            assert_eq("Check headers set", set(
+                self.headers), set(other.headers))
+        assert_eq("Check rows count", len(self.data), len(other.data))
+        for i, (r1, r2) in enumerate(zip(self.to_regular_data(), other.to_regular_data())):
+            assert_eq(f"Check row {i+1}", r1, r2)
         if self.flags.order_by:
             keys = [tuple(each[field] for field in self.flags.order_by)
                     for each in other.data]

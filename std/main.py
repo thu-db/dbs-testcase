@@ -6,13 +6,65 @@ from mysql.connector.cursor import MySQLCursor
 
 from judger.testcase import TestPoint
 
-show_databases_re = re.compile("^SHOW\s+DATABASES")
 mysql_databases = set(["information_schema", "mysql",
                        "performance_schema", "sys"])
 desc_re = re.compile("^DESC\s")
 
+fields_re = r"\((`\w+`(?:,\s*`\w+`)*)\)"
+pk_regex = re.compile(fr"^\s*PRIMARY\s+KEY.*{fields_re}", flags=re.MULTILINE)
+uk_regex = re.compile(fr"^\s*UNIQUE\s+KEY.*{fields_re}", flags=re.MULTILINE)
+fk_regex = re.compile(
+    fr"^\s*CONSTRAINT.*FOREIGN\s+KEY\s+{fields_re}\s+REFERENCES\s+`(\w*)`\s+{fields_re}", flags=re.MULTILINE)
+idx_regex = re.compile(fr"^\s*KEY.*{fields_re}", flags=re.MULTILINE)
+
+
+def fields_split(s: str):
+    return tuple(s.replace("`", "").replace(" ", "").split(","))
+
+
+def parse_constraints(cur: MySQLCursor, table):
+    cur.execute(f"SHOW CREATE TABLE {table}")
+    text = cur.fetchone()[1]
+    pk = pk_regex.search(text)
+    if pk:
+        pk = fields_split(pk.group(1))
+    uks = [fields_split(e) for e in uk_regex.findall(text)]
+    fks = [{
+        "fields": fields_split(e[0]),
+        "table": e[1],
+        "ref_fields": fields_split(e[2]),
+    } for e in fk_regex.findall(text)]
+    idxs = [fields_split(e) for e in idx_regex.findall(text)]
+    others = {pk, *uks, *(e["fields"] for e in fks)}
+    idxs = [idx for idx in idxs if idx not in others]
+    # Prepare an empty line
+    lines = [""]
+    if pk:
+        lines.append([f"PRIMARY KEY ({', '.join(pk)});"])
+    for fk in fks:
+        lines.append(
+            [f"FOREIGN KEY ({', '.join(fk['fields'])}) REFERENCES {fk['table']}({', '.join(fk['ref_fields'])});"])
+    for uk in uks:
+        lines.append([f"UNIQUE ({', '.join(uk)})"])
+    for idx in idxs:
+        lines.append([f"INDEX ({', '.join(idx)})"])
+    return lines
+
 
 def process_results(cur: MySQLCursor, sql: str, headers, data):
+
+    def process_row(row: tuple):
+        line = list(row)
+        for i, v in enumerate(line):
+            # Float to ".2f" string
+            if isinstance(v, float):
+                line[i] = f"{v:.2f}"
+            if v is None:
+                line[i] = "NULL"
+        return line
+
+    data = [process_row(row) for row in data]
+
     flags = TestPoint.generate_flags(sql)
     if sql.startswith("SHOW"):
         if "DATABASE" in sql.upper():
@@ -24,9 +76,17 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
             print("Unknown sql", sql)
             exit(-1)
     elif flags.is_desc:
-        table_name = sql.split()[1].replace(";", "")
-        cur.execute(f"SHOW INDEXES IN {table_name}")
-        pass
+        # Remove other columns
+        # reserved column index: 0, 1, 2, 4
+        headers = "Field", "Type", "Null", "Default"
+
+        def type_fixer(t: str):
+            if "int" in t:
+                return "INT"
+            return t.upper()
+        data = [(row[0], type_fixer(row[1]), row[2], row[4]) for row in data]
+        table_name = sql.replace(";", "").split()[1]
+        data += parse_constraints(cur, table_name)
     return headers, data
 
 
@@ -76,7 +136,7 @@ def main():
             if not sql.endswith(";"):
                 continue
             run_sql(cur, sql)
-            print("@done")
+            print(f"@{sql}")
     cur.close()
     conn.close()
 
