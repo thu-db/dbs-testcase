@@ -8,15 +8,17 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("-i", "--in_dir", type=Path, default=Path("./in"))
     parser.add_argument("-a", "--ans_dir", type=Path, default=Path("./ans"))
+    parser.add_argument("--std", action="store_true",
+                        help="use it to generate ans with std program")
     parser.add_argument("cmd", nargs="+", help="commands to run user program")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    checker = Checker(args.cmd)
+    checker = Checker(args.cmd, args.std)
     checker.read_cases(args.in_dir, args.ans_dir)
     # checker.print_depends()
     scores = checker.run()
     checker.exit()
-    checker.report()
+    # checker.report()
