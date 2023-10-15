@@ -1,6 +1,26 @@
 import subprocess
 import re
+import sys
 from pathlib import Path
+
+
+class PointFailed(Exception):
+    pass
+
+
+class CheckFailed(Exception):
+    def __init__(self, msg, ans, out):
+        self.msg = msg
+        self.ans = ans
+        self.out = out
+
+    def __repr__(self) -> str:
+        return f"CheckFailed: {self.msg}, but expected is [{self.ans}] and output is [{self.out}]"
+
+
+def assert_eq(msg, ans, out):
+    if ans != out:
+        raise CheckFailed(msg, ans, out)
 
 
 class Answer:
@@ -65,40 +85,50 @@ class Answer:
 
         def check(self, other: "Answer.Constraint"):
             # check pk
-            assert not ((self.pk is None) ^ (other.pk is None))
+            assert_eq("Check primary key existence",
+                      bool(self.pk), bool(other.pk))
             if self.pk is not None:
                 if self.pk["name"]:
-                    assert self.pk["name"] == other.pk["name"]
-                assert self.pk["fields"] == other.pk["fields"]
+                    assert_eq("Check primary key name",
+                              self.pk["name"], other.pk["name"])
+                assert_eq("Check primary key fields",
+                          self.pk["fields"], other.pk["fields"])
             # check fk
-            assert len(self.fks) == len(other.fks)
-            for i in range(len(self.fks)):
-                if self.fks[i]["name"]:
-                    assert self.fks[i]["name"] == other.fks[i]["name"]
-                assert self.fks[i]["fields"] == other.fks[i]["fields"]
-                assert self.fks[i]["ref_fields"] == other.fks[i]["ref_fields"]
+            assert_eq("Check foreign keys number",
+                      len(self.fks), len(other.fks))
+            for fk, ofk in zip(self.fks, other.fks):
+                if fk["name"]:
+                    assert_eq("Check foreign key name",
+                              fk["name"], ofk["name"])
+                assert_eq("Check foreign key fields",
+                          fk["fields"], ofk["fields"])
+                assert_eq("Check foreign key table",
+                          fk["table"], ofk["table"])
+                assert_eq("Check foreign key refer fields",
+                          fk["ref_fields"], ofk["ref_fields"])
             # check uk
-            assert len(self.uks) == len(other.uks)
-            for i in range(len(self.uks)):
-                if self.uks[i]["name"]:
-                    assert self.uks[i]["name"] == other.uks[i]["name"]
-                assert self.uks[i]["fields"] == other.uks[i]["fileds"]
+            assert_eq("Check union keys number", len(self.uks), len(other.uks))
+            for uk, ouk in zip(self.uks, other.uks):
+                if uk["name"]:
+                    assert_eq("Check union key name", uk["name"], ouk["name"])
+                assert_eq("Check union key fields",
+                          uk["fields"], ouk["fileds"])
             # check idx
-            assert len(self.idx) == len(other.idx)
-            for i in range(len(self.idx)):
-                if self.idx[i]["name"]:
-                    assert self.idx[i]["name"] == other.idx[i]["name"]
-                assert self.idx[i]["fields"] == other.idx[i]["fileds"]
+            assert_eq("Check index number", len(self.idx), len(other.idx))
+            for idx, oidx in zip(self.idx, other.idx):
+                if idx["name"]:
+                    assert_eq("Checker index name", idx["name"], oidx["name"])
+                assert_eq("Check index fields", idx["fields"], oidx["fileds"])
 
-    def __init__(self, lines, is_desc, colume_order, order_by, asc):
-        # Note: is_desc means "is description", asc means "ascend"
+    def __init__(self, lines, is_desc, colume_order, order_by, reversed_order):
+        # Note: is_desc means "is description", reversed_order means "ORDER BY ... DESC"
         self.is_desc = is_desc
         self.colume_order = colume_order
         self.headers = lines[0].split(",") if lines else []
         # Ignore order key not in the output headers
         self.order_by = order_by if order_by and all(
             field in self.headers for field in order_by) else None
-        self.asc = asc
+        self.reversed_order = reversed_order
         self.constraint = None
         if is_desc:
             if "" in lines:
@@ -127,12 +157,12 @@ class Answer:
         if self.order_by:
             keys = [tuple(each[field] for field in self.order_by)
                     for each in other.data]
-            if self.asc:
-                for i in range(1, len(keys)):
-                    assert keys[i - 1] <= keys[i]
-            else:
+            if self.reversed_order:
                 for i in range(1, len(keys)):
                     assert keys[i - 1] >= keys[i]
+            else:
+                for i in range(1, len(keys)):
+                    assert keys[i - 1] <= keys[i]
 
 
 class TestPoint:
@@ -140,11 +170,13 @@ class TestPoint:
         self.sql: str = sql
         self.ans: Answer = ans
 
+
 def count_n_generator(n):
     while True:
         for _ in range(n - 1):
             yield False
         yield True
+
 
 class TestCase:
     def __init__(self, name, deps, score, desc, sqls) -> None:
@@ -156,32 +188,29 @@ class TestCase:
         self.desc = desc
 
     def load_ans(self, text: str) -> bool:
-        lines = [l.strip() for l in text.splitlines()]
-        if not (lines.count("@BEGIN") == lines.count("@END") == len(self.sqls)):
+        parts = re.split(r'^@.*$', text, flags=re.MULTILINE)
+        # Clear trailing lines after last @line
+        parts.pop()
+        if len(parts) != len(self.sqls):
             raise ValueError(
-                f'ans file has {lines.count("@BEGIN")} BEGIN, {lines.count("@END")} END when in file has {len(self.sqls)} sqls')
-        for i in range(len(self.sqls)):
-            begin = lines.index("@BEGIN")
-            end = lines.index("@END")
-            ans_lines = lines[begin + 1: end]
-            is_desc = False
-            select_star = False
-            order_by = None
-            asc = False
-            for line in lines[:begin]:
-                if line == "@DESC":
-                    is_desc = True
-                elif line == "@STAR":
-                    select_star = True
-                elif line.startswith("@ORDER: "):
-                    order_by = line.split()[1:]
-                elif line == "@ASC":
-                    asc = True
+                f"ans_file has {len(parts)} parts ended by @line but in_file has {len(self.sqls)} sqls")
+        '''if not (lines.count("@BEGIN") == lines.count("@END") == len(self.sqls)):
+            raise ValueError(
+                f'ans file has {lines.count("@BEGIN")} BEGIN, {lines.count("@END")} END when in file has {len(self.sqls)} sqls')'''
+        for part, sql in zip(parts, self.sqls):
+            sql: str = sql.strip()
+            lines = [line.strip() for line in part.strip().splitlines()]
+            is_desc = bool(re.match(r"DESC\s", sql))
+            select_star = bool(re.match(r"SELECT\s", sql))
+            m = re.search(
+                r"ORDER\s+BY\s+([^, ]*(?:\s*,\s*[^, ]*)*)\s+(ASC|DESC)?", sql)
+            order_by = m and m.group(1).replace(" ", "").split(",")
+            reversed_order = m and m.group(2) == "DESC"
             self.test_points.append(TestPoint(
-                sql=self.sqls[i].strip(),
-                ans=Answer(ans_lines, is_desc, not select_star, order_by, asc),
+                sql=sql,
+                ans=Answer(lines, is_desc, not select_star,
+                           order_by, reversed_order),
             ))
-            lines = lines[end + 1:]
 
 
 class Checker:
@@ -205,6 +234,9 @@ class Checker:
             for name in item.deps:
                 lines.append(f"{item.name} --> {name}")
         print("\n    ".join(lines))
+
+    def report(self):
+        pass
 
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
@@ -236,10 +268,12 @@ class Checker:
             item.load_ans(text)
             self.cases[item.name] = item
             self.total_scores += item.score
-            print("[INFO] read", len(item.test_points), "test points for", item.name)
+            print("[INFO] read", len(item.test_points),
+                  "test points for", item.name)
+
         except Exception:
             from traceback import print_exc
-            print_exc()
+            print_exc(file=sys.stdout)
 
     def _run_case(self, _case):
         # Restart the killed process
@@ -258,8 +292,17 @@ class Checker:
                 lines.append(line.strip())
             # print("[DEBUG] read output", lines)
             ans: Answer = point.ans
-            out = Answer(lines, ans.is_desc, ans.colume_order, ans.order_by, ans.asc)
-            ans.check(out)
+            out = Answer(lines, ans.is_desc, ans.colume_order,
+                         ans.order_by, ans.reversed_order)
+            try:
+                ans.check(out)
+            except CheckFailed as e:
+                print(repr(e))
+                raise PointFailed(point.sql)
+            except Exception:
+                from traceback import print_exc
+                print_exc(file=sys.stdout)
+                raise PointFailed(point.sql)
 
     def run_case(self, name):
         if name in self.passed_cases:
@@ -275,20 +318,23 @@ class Checker:
                 return False
             # run depend_case successfully: continue
         try:
-            print("[INFO] run case", name, "...", end=" ")
+            print("[INFO] Case", name, "starts")
             self._run_case(_case)
             self.scores += _case.score
             self.passed_cases.add(name)
-            print("passed")
+            print("[INFO] Case", name, "passed")
             return True
         except KeyboardInterrupt:
-            print()
             self.kill()
             raise
+        except PointFailed as e:
+            print("[ERROR] case", name, "failed because", repr(e))
+            self.failed_cases.add(name)
+            return False
         except Exception:
-            print()
             from traceback import print_exc
-            print_exc()
+            print_exc(file=sys.stdout)
+            print("[CRITICAL] Meet error when running user program, try to restart...")
             if self.prog.poll():
                 self.runnning = False
             self.failed_cases.add(name)
