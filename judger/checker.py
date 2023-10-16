@@ -2,14 +2,15 @@ import subprocess
 import re
 import sys
 from pathlib import Path
+import os
+import resource
 
 from .testcase import TestCase, TestPoint, Answer
 from .error import CheckFailed, PointFailed
 
-
 class Checker:
     def __init__(self, cmd, gen_ans) -> None:
-        self.cmd = cmd
+        # judgement meta
         self.gen_ans = gen_ans
         self.prog: subprocess.Popen = None
         self.cases = {}
@@ -18,6 +19,11 @@ class Checker:
         self.passed_cases = set()
         self.failed_cases = set()
         self.skipped_cases = set()
+        
+        # user program meta
+        self.cmd = cmd
+        self.env = dict(**os.environ, OMP_NUM_THREADS="1")
+        self.memory_limit = 512 * 1024 * 1024
         # On windows kill() is exactly terminate(), so record the running states manually
         self.runnning = False
         self.start()
@@ -158,8 +164,13 @@ class Checker:
         return self.scores
 
     def start(self):
-        self.prog = subprocess.Popen(self.cmd,
-                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding='utf-8')
+        def set_memory_limit():
+            if sys.platform != "linux":
+                return
+            resource.setrlimit(resource.RLIMIT_AS, (self.memory_limit, self.memory_limit))
+        self.prog = subprocess.Popen(self.cmd, encoding='utf-8', 
+                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                     env=self.env, preexec_fn=set_memory_limit)
         self.runnning = True
 
     def exit(self):
