@@ -19,6 +19,5 @@ if __name__ == "__main__":
     checker = Checker(args.cmd, args.std)
     checker.read_cases(args.in_dir, args.ans_dir)
     # checker.print_depends()
-    scores = checker.run()
-    checker.exit()
-    # checker.report()
+    checker.run()
+    checker.report()

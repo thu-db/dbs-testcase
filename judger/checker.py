@@ -4,9 +4,27 @@ import sys
 from pathlib import Path
 import os
 import resource
+from time import monotonic_ns
 
 from .testcase import TestCase, TestPoint, Answer
-from .error import CheckFailed, PointFailed
+from .error import CheckFailed, PointFailed, TimeLimitExceeded, InitTimeout
+from .termcolor import colored
+
+class TimeAccumulator:
+    def __init__(self, timeout_ns):
+        self.time_ns = 0
+        self.timeout_ns = timeout_ns
+        self.start = 0
+        self.stop = 0
+
+    def __enter__(self):
+        self.start = monotonic_ns()
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self.stop = monotonic_ns()
+        self.time_ns += self.stop - self.start
+        if self.time_ns > self.timeout_ns:
+            raise TimeLimitExceeded
 
 class Checker:
     def __init__(self, cmd, gen_ans) -> None:
@@ -16,6 +34,7 @@ class Checker:
         self.cases = {}
         self.scores = 0
         self.total_scores = 0
+        self.time_limiter = TimeAccumulator(3600 * 1e9)
         self.passed_cases = set()
         self.failed_cases = set()
         self.skipped_cases = set()
@@ -23,10 +42,9 @@ class Checker:
         # user program meta
         self.cmd = cmd
         self.env = dict(**os.environ, OMP_NUM_THREADS="1")
-        self.memory_limit = 512 * 1024 * 1024
+        self.memory_limit = 256 * 1024 * 1024
         # On windows kill() is exactly terminate(), so record the running states manually
         self.runnning = False
-        self.start()
 
     def print_depends(self):
         lines = ["flowchart BT"]
@@ -37,7 +55,18 @@ class Checker:
         print("\n    ".join(lines))
 
     def report(self):
-        pass
+        print("Passed cases:", colored(", ".join(sorted(self.passed_cases)), "green", attrs=["bold"]))
+        print("Failed cases:", colored(", ".join(sorted(self.failed_cases)), "red", attrs=["bold"]))
+        print("Skipped cases:", colored(", ".join(sorted(self.skipped_cases)), "yellow", attrs=["bold"]))
+        if self.scores == self.total_scores:
+            color = "green"
+        elif self.scores >= self.total_scores * 0.8:
+            color = "blue"
+        elif self.scores >= self.total_scores * 0.6:
+            color = "yello"
+        else:
+            color = "red"
+        print(colored(f"Scores: {self.scores} / {self.total_scores}", color, attrs=['bold']))
 
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
@@ -81,21 +110,22 @@ class Checker:
             self.cases.pop(item.name)
 
     def _run_case(self, _case):
-        # Restart the killed process
-        if self.prog.poll():
-            self.start()
         for point in _case.test_points:
             point: TestPoint
             # print("[DEBUG] run sql:" point.sql)
-            self.prog.stdin.write(point.sql + "\n")
-            self.prog.stdin.flush()
-            lines = []
-            while True:
-                line: str = self.prog.stdout.readline()
-                if line.startswith("@"):
-                    break
-                # Note that readline will contains the "\n"
-                lines.append(line.strip())
+            with self.time_limiter:
+                # Restart the killed process and count the starting time
+                # Note that it won't cost any time if program is already running
+                self.start()
+                self.prog.stdin.write(point.sql + "\n")
+                self.prog.stdin.flush()
+                lines = []
+                while True:
+                    line: str = self.prog.stdout.readline()
+                    if line.startswith("@"):
+                        break
+                    # Note that readline will contains the "\n"
+                    lines.append(line.strip())
             # print("[DEBUG] read output", lines)
             if self.gen_ans:
                 # TODO finish write ans
@@ -128,23 +158,25 @@ class Checker:
                 return False
             # run depend_case successfully: continue
         try:
-            print("[INFO] Case", name, "starts")
+            print("[INFO] Case", name, "is running")
             self._run_case(_case)
             self.scores += _case.score
             self.passed_cases.add(name)
-            print("[INFO] Case", name, "passed")
+            print(colored(f"[INFO] Case {name} passed", "green"))
             return True
         except KeyboardInterrupt:
             self.kill()
             raise
         except PointFailed as e:
-            print("[ERROR] case", name, "failed because", repr(e))
+            print(colored(f"[ERROR] case {name} failed because {repr(e)}", "red"))
             self.failed_cases.add(name)
             return False
+        except TimeLimitExceeded:
+            raise
         except Exception:
             from traceback import print_exc
             print_exc(file=sys.stdout)
-            print("[CRITICAL] Meet error when running user program, try to restart...")
+            print(colored("[CRITICAL] Meet error when running user program, try to restart...", "red", attrs=["bold"]))
             if self.prog.poll():
                 self.runnning = False
             self.failed_cases.add(name)
@@ -157,13 +189,35 @@ class Checker:
                     yield False
                 yield True
         exit_counter = count_n_generator(5)
-        for name in self.cases:
-            self.run_case(name)
-            if next(exit_counter):
-                self.exit()
+        try:
+            self.init()
+            for name in self.cases:
+                self.run_case(name)
+                if next(exit_counter):
+                    self.exit()
+            self.exit()
+        except TimeLimitExceeded:
+            print(colored("[ERROR] Time Limit Exceeded", "red"))
         return self.scores
 
+    def init(self):
+        print("[INFO] User program initializing...")
+        cmd = self.cmd + ["--init"]
+        with self.time_limiter:
+            prog = subprocess.Popen(cmd, encoding='utf-8', 
+                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                    env=self.env)
+            try:
+                prog.wait(60)
+            except subprocess.TimeoutExpired:
+                prog.kill()
+                raise InitTimeout
+        print("[INFO] User program initialized")
+
+
     def start(self):
+        if self.runnning:
+            return
         def set_memory_limit():
             if sys.platform != "linux":
                 return
@@ -172,17 +226,25 @@ class Checker:
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      env=self.env, preexec_fn=set_memory_limit)
         self.runnning = True
+        print("[INFO] User program starts")
 
     def exit(self):
-        try:
-            self.prog.stdin.write("exit\n")
-            self.prog.stdin.flush()
-            # If exit can not finish in 1minutes, it will kill the process
-            self.prog.wait(60)
-        except (OSError, BrokenPipeError):
-            pass
-        except subprocess.TimeoutExpired:
-            self.kill()
+        if not self.runnning:
+            return
+        state, color, level = "normally", "white", "INFO"
+        with self.time_limiter:
+            try:
+                self.prog.stdin.write("exit\n")
+                self.prog.stdin.flush()
+                # If exit can not finish in 1minutes, it will kill the process
+                self.prog.wait(60)
+            except (OSError, BrokenPipeError):
+                pass
+            except subprocess.TimeoutExpired:
+                # Note: If the program gets killed, its states may be undefined
+                self.kill()
+                state, color, level = "abnormally", "red", "ERROR"
+        print(colored(f"[{level}] User program exited {state}"), color)
         self.runnning = False
 
     def kill(self):

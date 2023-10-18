@@ -1,3 +1,4 @@
+import sys
 ans = [
     # 1-system.sql
     "DATABASES",
@@ -54,7 +55,7 @@ L_SHIPINSTRUCT,VARCHAR(25),YES,NULL
 L_SHIPMODE,VARCHAR(10),YES,NULL
 L_COMMENT,VARCHAR(44),YES,NULL
 
-PRIMARY KEY (L_PARTKEY, L_SUPPKEY);
+PRIMARY KEY (L_ORDERKEY, L_LINENUMBER);
 FOREIGN KEY (L_ORDERKEY) REFERENCES ORDERS(O_ORDERKEY);
 FOREIGN KEY (L_PARTKEY,L_SUPPKEY) REFERENCES PARTSUPP(PS_PARTKEY,PS_SUPPKEY);
     """.strip(),
@@ -90,11 +91,13 @@ TBL
 """.strip(),
 ]
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        exit(0)
     # print("start", file=sys.stderr, flush=True)
     for e in ans:
-        input()
+        if input().strip() == "exit":
+            exit(-1)
         if e:
             print(e)
         print("@done")
     input()
-        
