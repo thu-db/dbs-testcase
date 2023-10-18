@@ -104,12 +104,12 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("-u", "--user", required=True)
     parser.add_argument("-p", "--password", required=True)
-    parser.add_argument("--clear", action="store_true")
+    parser.add_argument("--init", action="store_true")
     parser.add_argument("host")
     return parser.parse_args()
 
 
-def clear(cur: MySQLCursor):
+def init(cur: MySQLCursor):
     cur.execute("SHOW DATABASES")
     dbs = [e[0] for e in cur.fetchall()]
     dbs = [db for db in dbs if db not in mysql_databases]
@@ -126,8 +126,8 @@ def main():
         autocommit=True,
     )
     cur = conn.cursor()
-    if args.clear:
-        clear(cur)
+    if args.init:
+        init(cur)
     else:
         while True:
             sql = input().strip()

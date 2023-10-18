@@ -3,12 +3,12 @@ import re
 import sys
 from pathlib import Path
 import os
-import resource
 from time import monotonic_ns
 
 from .testcase import TestCase, TestPoint, Answer
 from .error import CheckFailed, PointFailed, TimeLimitExceeded, InitTimeout
 from .termcolor import colored
+
 
 class TimeAccumulator:
     def __init__(self, timeout_ns):
@@ -26,6 +26,7 @@ class TimeAccumulator:
         if self.time_ns > self.timeout_ns:
             raise TimeLimitExceeded
 
+
 class Checker:
     def __init__(self, cmd, gen_ans) -> None:
         # judgement meta
@@ -38,7 +39,7 @@ class Checker:
         self.passed_cases = set()
         self.failed_cases = set()
         self.skipped_cases = set()
-        
+
         # user program meta
         self.cmd = cmd
         self.env = dict(**os.environ, OMP_NUM_THREADS="1")
@@ -55,9 +56,12 @@ class Checker:
         print("\n    ".join(lines))
 
     def report(self):
-        print("Passed cases:", colored(", ".join(sorted(self.passed_cases)), "green", attrs=["bold"]))
-        print("Failed cases:", colored(", ".join(sorted(self.failed_cases)), "red", attrs=["bold"]))
-        print("Skipped cases:", colored(", ".join(sorted(self.skipped_cases)), "yellow", attrs=["bold"]))
+        print("Passed cases:", colored(
+            ", ".join(sorted(self.passed_cases)), "green", attrs=["bold"]))
+        print("Failed cases:", colored(
+            ", ".join(sorted(self.failed_cases)), "red", attrs=["bold"]))
+        print("Skipped cases:", colored(
+            ", ".join(sorted(self.skipped_cases)), "yellow", attrs=["bold"]))
         if self.scores == self.total_scores:
             color = "green"
         elif self.scores >= self.total_scores * 0.8:
@@ -66,7 +70,8 @@ class Checker:
             color = "yello"
         else:
             color = "red"
-        print(colored(f"Scores: {self.scores} / {self.total_scores}", color, attrs=['bold']))
+        print(
+            colored(f"Scores: {self.scores} / {self.total_scores}", color, attrs=['bold']))
 
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
@@ -168,7 +173,8 @@ class Checker:
             self.kill()
             raise
         except PointFailed as e:
-            print(colored(f"[ERROR] case {name} failed because {repr(e)}", "red"))
+            print(
+                colored(f"[ERROR] case {name} failed because {repr(e)}", "red"))
             self.failed_cases.add(name)
             return False
         except TimeLimitExceeded:
@@ -176,7 +182,8 @@ class Checker:
         except Exception:
             from traceback import print_exc
             print_exc(file=sys.stdout)
-            print(colored("[CRITICAL] Meet error when running user program, try to restart...", "red", attrs=["bold"]))
+            print(colored(
+                "[CRITICAL] Meet error when running user program, try to restart...", "red", attrs=["bold"]))
             if self.prog.poll():
                 self.runnning = False
             self.failed_cases.add(name)
@@ -204,7 +211,7 @@ class Checker:
         print("[INFO] User program initializing...")
         cmd = self.cmd + ["--init"]
         with self.time_limiter:
-            prog = subprocess.Popen(cmd, encoding='utf-8', 
+            prog = subprocess.Popen(cmd, encoding='utf-8',
                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                     env=self.env)
             try:
@@ -214,17 +221,18 @@ class Checker:
                 raise InitTimeout
         print("[INFO] User program initialized")
 
-
     def start(self):
         if self.runnning:
             return
+
         def set_memory_limit():
-            if sys.platform != "linux":
-                return
-            resource.setrlimit(resource.RLIMIT_AS, (self.memory_limit, self.memory_limit))
-        self.prog = subprocess.Popen(self.cmd, encoding='utf-8', 
+            import resource
+            resource.setrlimit(resource.RLIMIT_AS,
+                               (self.memory_limit, self.memory_limit))
+
+        self.prog = subprocess.Popen(self.cmd, encoding='utf-8', env=self.env,
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     env=self.env, preexec_fn=set_memory_limit)
+                                     preexec_fn=set_memory_limit if sys.platform == "linux" else None)
         self.runnning = True
         print("[INFO] User program starts")
 
