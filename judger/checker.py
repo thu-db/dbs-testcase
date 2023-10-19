@@ -1,5 +1,4 @@
 import subprocess
-import re
 import sys
 from pathlib import Path
 import os
@@ -28,10 +27,11 @@ class TimeAccumulator:
 
 
 class Checker:
-    def __init__(self, cmd, gen_ans) -> None:
+    def __init__(self, cmd, gen_ans, flags) -> None:
         # judgement meta
         self.gen_ans = gen_ans
         self.prog: subprocess.Popen = None
+        self.flags = set(flags or [])
         self.cases = {}
         self.scores = 0
         self.total_scores = 0
@@ -39,6 +39,7 @@ class Checker:
         self.passed_cases = set()
         self.failed_cases = set()
         self.skipped_cases = set()
+        self.disabled_cases = set()
 
         # user program meta
         self.cmd = cmd
@@ -62,6 +63,8 @@ class Checker:
             ", ".join(sorted(self.failed_cases)), "red", attrs=["bold"]))
         print("Skipped cases:", colored(
             ", ".join(sorted(self.skipped_cases)), "yellow", attrs=["bold"]))
+        print("Disabled cases:", colored(
+            ", ".join(sorted(self.disabled_cases)), "grey"))
         if self.scores == self.total_scores:
             color = "green"
         elif self.scores >= self.total_scores * 0.8:
@@ -72,6 +75,37 @@ class Checker:
             color = "red"
         print(
             colored(f"Scores: {self.scores} / {self.total_scores}", color, attrs=['bold']))
+    
+    def set_enabled(self, name):
+        """
+        It is no use now, but may be used in future.
+        """
+        _case: TestCase = self.cases[name]
+        if _case.enabled:
+            return
+        _case.enabled = True
+        if name in self.disabled_cases:
+            self.disabled_cases.remove(name)
+        for dep in _case.deps:
+            self.set_enabled(dep)
+        
+    def check_enabled(self, name):
+        _case: TestCase = self.cases[name]
+        if _case.enabled is not None:
+            return _case.enabled
+        self.disabled_cases.add(name)
+        _case.enabled = False
+        for flag in _case.flags:
+            if flag not in self.flags:
+                return False
+        for dep in _case.deps:
+            if not self.check_enabled(dep):
+                if _case.flags:
+                    print(colored(f"[WARNING] You may want to enable testcase {name} but some of its dependancies disabled", "yellow", attrs=["bold"]))
+                return False
+        _case.enabled = True
+        self.disabled_cases.remove(name)
+        return True
 
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
@@ -82,39 +116,25 @@ class Checker:
                 continue
             ans_path = ans_dir / (in_path.stem + ".ans")
             if not self.gen_ans and not ans_path.exists():
-                print("[WARN] sql file has no ans:", in_dir)
-                continue
-            self.read_case(in_path, ans_path)
-        print("[INFO] read", len(self.cases), "cases in total")
+                    print("[WARN] sql file has no ans:", in_path)
+                    continue
+            try:
+                item = TestCase.from_file(in_path, ans_path, self.gen_ans)
+                self.cases[item.name] = item
+            except Exception:
+                import traceback 
+                traceback.print_exc()
 
-    def read_case(self, in_path, ans_path):
-        with open(in_path) as file:
-            text = file.read()
-        item = TestCase(
-            name=re.search(r"-- @Name: (.*)", text).group(1),
-            deps=re.search(r"-- @Depends: (.*)", text).group(1).split(),
-            desc=re.search(r"-- @Description: (.*)", text).group(1),
-            score=int(re.search(r"-- @Score: (.*)", text).group(1)),
-            sqls=re.findall(r"^[^-].*;\s*$", text, re.MULTILINE),
-        )
-        self.cases[item.name] = item
+        for name in self.cases:
+            if not self.check_enabled(name):
+                self.disabled_cases.add(name)
+        self.total_scores = sum(each.score for name, each in self.cases.items() if name not in self.disabled_cases)
+        print("[INFO] read", len(self.cases), "cases in total,",
+              len(self.cases) - len(self.disabled_cases), "cases enabled")
+
+    def _run_case(self, _case: TestCase):
         if self.gen_ans:
-            return
-
-        with open(ans_path) as file:
-            text = file.read()
-        try:
-            item.load_ans(text)
-            self.total_scores += item.score
-            print("[INFO] read", len(item.test_points),
-                  "test points for", item.name)
-
-        except Exception:
-            from traceback import print_exc
-            print_exc(file=sys.stdout)
-            self.cases.pop(item.name)
-
-    def _run_case(self, _case):
+            file = open(_case.ans_path, "w", encoding="utf-8")
         for point in _case.test_points:
             point: TestPoint
             # print("[DEBUG] run sql:" point.sql)
@@ -134,8 +154,9 @@ class Checker:
             # print("[DEBUG] read output", lines)
             if self.gen_ans:
                 # TODO finish write ans
-                print(*lines, sep='\n')
-                print(f"@{point.sql}\n")
+                if lines:
+                    print(*lines, sep='\n', file=file)
+                print(f"@{point.sql}\n", file=file)
                 continue
             ans: Answer = point.ans
             out = Answer(lines, ans.flags)
@@ -148,11 +169,13 @@ class Checker:
                 from traceback import print_exc
                 print_exc(file=sys.stdout)
                 raise PointFailed(point.sql)
+        if self.gen_ans:
+            file.close()
 
     def run_case(self, name):
         if name in self.passed_cases:
             return True
-        if name in self.failed_cases or name in self.skipped_cases:
+        if name in self.failed_cases or name in self.skipped_cases or name in self.disabled_cases:
             return False
         _case: TestCase = self.cases[name]
         for depend_case in _case.deps:

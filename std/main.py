@@ -7,7 +7,9 @@ from mysql.connector.cursor import MySQLCursor
 from judger.testcase import TestPoint
 
 mysql_databases = set(["information_schema", "mysql",
-                       "performance_schema", "sys"])
+                       "performance_schema", "sys",
+                       # Note: PROTECTED is a user-specific database not to avoid dropping
+                       "PROTECTED"])
 desc_re = re.compile("^DESC\s")
 
 fields_re = r"\((`\w+`(?:,\s*`\w+`)*)\)"
@@ -80,7 +82,10 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
         # reserved column index: 0, 1, 2, 4
         headers = "Field", "Type", "Null", "Default"
 
-        def type_fixer(t: str):
+        def type_fixer(t: str | bytes):
+            # It's weird that mariadb return type as str, but mysql return bytes
+            if isinstance(t, bytes):
+                t = t.decode()
             if "int" in t:
                 return "INT"
             return t.upper()
@@ -104,6 +109,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("-u", "--user", required=True)
     parser.add_argument("-p", "--password", required=True)
+    parser.add_argument("-P", "--port", default=3306, type=int)
     parser.add_argument("--init", action="store_true")
     parser.add_argument("host")
     return parser.parse_args()
@@ -122,6 +128,7 @@ def main():
         user=args.user,
         password=args.password,
         host=args.host,
+        port=args.port,
         buffered=True,
         autocommit=True,
     )

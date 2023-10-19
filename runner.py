@@ -11,13 +11,14 @@ def parse_args():
     parser.add_argument("--std", action="store_true",
                         help="use it to generate ans with std program")
     parser.add_argument("cmd", nargs="+", help="commands to run user program")
+    parser.add_argument("-f", "--flags", nargs="*", help="flags to enable these testcases")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    checker = Checker(args.cmd, args.std)
+    checker = Checker(args.cmd, args.std, args.flags)
     checker.read_cases(args.in_dir, args.ans_dir)
-    # checker.print_depends()
+    checker.print_depends()
     checker.run()
     checker.report()

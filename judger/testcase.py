@@ -154,7 +154,7 @@ class Answer:
 class TestPoint:
     order_regex = re.compile(
         r"ORDER\s+BY\s+([^, ]*(?:\s*,\s*[^, ]*)*)\s+(ASC|DESC)?")
-    selector_regex = re.compile(r"SELECT.*?FROM")
+    selector_regex = re.compile(r"SELECT(.*?)FROM")
     desc_regex = re.compile(r"DESC\s")
 
     def __init__(self, sql, ans=None) -> None:
@@ -175,13 +175,37 @@ class TestPoint:
 
 
 class TestCase:
-    def __init__(self, name, deps, score, desc, sqls) -> None:
+    def __init__(self, name, deps, flags, score, desc, sqls, ans_path) -> None:
         self.sqls = sqls
         self.deps = deps
+        self.flags = flags
         self.score = score
         self.name = name
         self.desc = desc
+        self.ans_path = ans_path
+        self.enabled = None
         self.test_points = [TestPoint(sql.strip()) for sql in sqls]
+    
+    @staticmethod
+    def from_file(in_path, ans_path, generate_answer):
+        with open(in_path) as file:
+            text = file.read()
+        item = TestCase(
+            name=re.search(r"-- @Name: *(.*)", text, re.MULTILINE).group(1),
+            deps=re.search(r"-- @Depends: *(.*)", text, re.MULTILINE).group(1).split(),
+            flags=re.search(r"-- @Flags: *(.*)", text, re.MULTILINE).group(1).split(),
+            desc=re.search(r"-- @Description: *(.*)", text, re.MULTILINE).group(1),
+            score=int(re.search(r"-- @Score: *(.*)", text, re.MULTILINE).group(1)),
+            sqls=re.findall(r"^[^-].*;\s*$", text, re.MULTILINE),
+            ans_path=ans_path,
+        )
+        if not generate_answer:
+            with open(ans_path) as file:
+                text = file.read()
+                item.load_ans(text)
+                print("[INFO] read", len(item.test_points),
+                    "test points for", item.name)
+        return item
 
     def load_ans(self, text: str) -> bool:
         parts = re.split(r'^@.*$', text, flags=re.MULTILINE)
