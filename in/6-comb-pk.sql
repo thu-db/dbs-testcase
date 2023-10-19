@@ -1,7 +1,7 @@
--- @Name: com-pk
+-- @Name: comb-pk
 -- @Depends: query-a
--- @Flags: com-pk
--- @Description: Basic combined primary key testing
+-- @Flags: comb pk
+-- @Description: Combined primary key testing
 -- @Score: 1
 
 USE DB2;

@@ -96,15 +96,16 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
 
 # Map for MySQL errno
 error_map = {
-    1452: "foreign",    # inserted foreign key not existing
     1062: "primary",    # inserted primary key duplicated
+    1068: "primay",     # multiple primary keys
+    1452: "foreign",    # inserted foreign key not existing
     1451: "foreign",    # update/delete fails for foreign key
 }
 
 def run_sql(cur: MySQLCursor, sql: str):
     try:
         cur.execute(sql)
-    except mysql.connector.IntegrityError as e:
+    except mysql.connector.DatabaseError as e:
         if e.errno in error_map:
             print("!ERROR")
             print(error_map[e.errno])
