@@ -7,7 +7,7 @@
 USE DB;
 
 -- Check simple table creation
--- Notice: table TBL will be used in feature
+-- Notice: table TBL* will be used in feature
 CREATE TABLE TBL (a INT NOT NULL, b VARCHAR(16) NOT NULL, c FLOAT NOT NULL);
 CREATE TABLE TBL2 (a INT NOT NULL, b VARCHAR(17) NOT NULL, c FLOAT NOT NULL);
 CREATE TABLE TBL3 (a INT NOT NULL, b VARCHAR(18) NOT NULL, c FLOAT NOT NULL);

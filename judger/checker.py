@@ -88,8 +88,8 @@ class Checker:
             self.disabled_cases.remove(name)
         for dep in _case.deps:
             self.set_enabled(dep)
-        
-    def check_enabled(self, name):
+
+    def case_enabled(self, name):
         _case: TestCase = self.cases[name]
         if _case.enabled is not None:
             return _case.enabled
@@ -99,7 +99,7 @@ class Checker:
             if flag not in self.flags:
                 return False
         for dep in _case.deps:
-            if not self.check_enabled(dep):
+            if not self.case_enabled(dep):
                 if _case.flags:
                     print(colored(f"[WARNING] You may want to enable testcase {name} but some of its dependancies disabled", "yellow", attrs=["bold"]))
                 return False
@@ -126,7 +126,7 @@ class Checker:
                 traceback.print_exc()
 
         for name in self.cases:
-            if not self.check_enabled(name):
+            if not self.case_enabled(name):
                 self.disabled_cases.add(name)
         self.total_scores = sum(each.score for name, each in self.cases.items() if name not in self.disabled_cases)
         print("[INFO] read", len(self.cases), "cases in total,",
@@ -247,11 +247,16 @@ class Checker:
     def start(self):
         if self.runnning:
             return
-
+    
+        if self.gen_ans and self.prog and self.prog.returncode:
+            print("standard program failed!")
+            exit(-1)
+    
         def set_memory_limit():
             import resource
             resource.setrlimit(resource.RLIMIT_AS,
                                (self.memory_limit, self.memory_limit))
+
 
         self.prog = subprocess.Popen(self.cmd, encoding='utf-8', env=self.env,
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE,

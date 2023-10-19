@@ -1,6 +1,6 @@
 import re
 
-from .error import assert_eq
+from .error import assert_eq, check_constraint_error
 
 
 class PointFlags:
@@ -132,12 +132,19 @@ class Answer:
         if self.flags.is_desc:
             self.constraint.check(other.constraint)
         assert_eq("Check columns count", len(self.headers), len(other.headers))
+        if not self.headers:
+            return
         if self.flags.colume_order:
             assert_eq("Check headers tuple", self.headers, other.headers)
         else:
             assert_eq("Check headers set", set(
                 self.headers), set(other.headers))
         assert_eq("Check rows count", len(self.data), len(other.data))
+        # Check !ERROR
+        if self.headers[0] == "!ERROR":
+            assert_eq("Check error type", check_constraint_error(self.data[0]["!ERROR"]), 
+                      check_constraint_error(other.data[0]["!ERROR"]))
+            return
         for i, (r1, r2) in enumerate(zip(self.to_regular_data(), other.to_regular_data())):
             assert_eq(f"Check row {i+1}", r1, r2)
         if self.flags.order_by:

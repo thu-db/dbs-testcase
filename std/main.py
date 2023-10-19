@@ -94,9 +94,23 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
         data += parse_constraints(cur, table_name)
     return headers, data
 
+# Map for MySQL errno
+error_map = {
+    1452: "foreign",    # inserted foreign key not existing
+    1062: "primary",    # inserted primary key duplicated
+    1451: "foreign",    # update/delete fails for foreign key
+}
 
 def run_sql(cur: MySQLCursor, sql: str):
-    cur.execute(sql)
+    try:
+        cur.execute(sql)
+    except mysql.connector.IntegrityError as e:
+        if e.errno in error_map:
+            print("!ERROR")
+            print(error_map[e.errno])
+            return
+        raise e
+
     if not cur.with_rows:
         return
     headers, data = process_results(cur, sql, cur.column_names, cur.fetchall())

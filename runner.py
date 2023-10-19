@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
+from os import environ
 
 from judger import Checker
 
@@ -17,6 +18,8 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.std:
+        environ["PYTHONPATH"] = environ.get("PYTHONPATH", "") + ":."
     checker = Checker(args.cmd, args.std, args.flags)
     checker.read_cases(args.in_dir, args.ans_dir)
     checker.print_depends()

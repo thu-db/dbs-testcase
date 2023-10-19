@@ -14,11 +14,10 @@
 
 ## 标程说明
 
-附带了 `std/main.py` 作为借用 MySQL 跑测例的标程，附带的第三方库放在 `std/requirements.txt` 中，注意它用了 `judger` 中的一个工具函数，所以需要手动设置 `PYTHONPATH` 来解决 `import` 路径问题，参考运行方法如下（Windows 的 CMD 中将 `export` 改为 `set` 即可）：
+附带了 `std/main.py` 作为借用 MySQL 跑测例的标程，附带的第三方库放在 `std/requirements.txt` 中，可以用于生成答案，参考运行方式如下：
 
-```
-export PYTHONPATH=.
-python std/main.py [other_arguments...]
+```bash
+python runner.py --std -f [flags, ...] -- python std/main.py <args...>
 ```
 
 ## TODO
