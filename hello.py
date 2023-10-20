@@ -83,4 +83,7 @@ if __name__ == "__main__":
         if e:
             print(e)
         print("@done")
-    input()
+    while True:
+        if input() == "exit":
+            exit(0)
+        print("@nothing")

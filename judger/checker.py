@@ -24,7 +24,7 @@ class TimeAccumulator:
         self.time_ns += self.stop - self.start
         if self.time_ns > self.timeout_ns:
             raise TimeLimitExceeded
-    
+
     @property
     def past_seconds(self):
         return self.time_ns / 1e9
@@ -97,7 +97,7 @@ class Checker:
             color = "red"
         print(
             colored(f"Scores: {self.scores} / {self.total_scores}, Time: {self.time_limiter.past_seconds:.3f}s", color, attrs=['bold']))
-    
+
     def set_enabled(self, name):
         """
         It is no use now, but may be used in future.
@@ -123,12 +123,13 @@ class Checker:
         for dep in _case.deps:
             if not self.case_enabled(dep):
                 if _case.flags:
-                    print(colored(f"[WARNING] You may want to enable testcase {name} but some of its dependancies disabled", "yellow", attrs=["bold"]))
+                    print(colored(
+                        f"[WARNING] You may want to enable testcase {name} but some of its dependancies disabled", "yellow", attrs=["bold"]))
                 return False
         _case.enabled = True
         self.disabled_cases.remove(name)
         return True
-    
+
     def case_optional(self, name):
         _case: TestCase = self.cases[name]
         if _case.optional is not None:
@@ -143,7 +144,6 @@ class Checker:
         _case.optional = False
         return False
 
-
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
         ans_dir = Path(ans_dir)
@@ -153,20 +153,21 @@ class Checker:
                 continue
             ans_path = ans_dir / (in_path.stem + ".ans")
             if not self.gen_ans and not ans_path.exists():
-                    print("[WARN] sql file has no ans:", in_path)
-                    continue
+                print("[WARN] sql file has no ans:", in_path)
+                continue
             try:
                 item = TestCase.from_file(in_path, ans_path, self.gen_ans)
                 self.cases[item.name] = item
             except Exception:
-                import traceback 
+                import traceback
                 traceback.print_exc()
 
         for name in self.cases:
             self.case_optional(name)
             if not self.case_enabled(name):
                 self.disabled_cases.add(name)
-        self.total_scores = sum(each.score for name, each in self.cases.items() if name not in self.disabled_cases)
+        self.total_scores = sum(each.score for name, each in self.cases.items(
+        ) if name not in self.disabled_cases)
         print("[INFO] read", len(self.cases), "cases in total,",
               len(self.cases) - len(self.disabled_cases), "cases enabled")
 
@@ -191,7 +192,6 @@ class Checker:
                     lines.append(line.strip())
             # print("[DEBUG] read output", lines)
             if self.gen_ans:
-                # TODO finish write ans
                 if lines:
                     print(*lines, sep='\n', file=file)
                 print(f"@{point.sql}\n", file=file)
@@ -285,16 +285,15 @@ class Checker:
     def start(self):
         if self.runnning:
             return
-    
+
         if self.gen_ans and self.prog and self.prog.returncode:
             print("standard program failed!")
             exit(-1)
-    
+
         def set_memory_limit():
             import resource
             resource.setrlimit(resource.RLIMIT_AS,
                                (self.memory_limit, self.memory_limit))
-
 
         self.prog = subprocess.Popen(self.cmd, encoding='utf-8', env=self.env,
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -318,7 +317,7 @@ class Checker:
                 # Note: If the program gets killed, its states may be undefined
                 self.kill()
                 state, color, level = "abnormally", "red", "ERROR"
-        print(colored(f"[{level}] User program exited {state}"), color)
+        print(colored(f"[{level}] User program exited {state}", color))
         self.runnning = False
 
     def kill(self):
