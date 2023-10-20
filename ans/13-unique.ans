@@ -5,7 +5,7 @@
 @INSERT INTO T102 VALUES (1, 1), (2, 2), (3, 3), (4, 1);
 
 !ERROR
-primary
+duplicate
 @ALTER TABLE T102 ADD CONSTRAINT UNIQUE UNQ_UNI(UNI);
 
 Field,Type,Null,Default
@@ -26,7 +26,7 @@ UNIQUE (UNI)
 @DESC T102;
 
 !ERROR
-primary
+duplicate
 @INSERT INTO T102 VALUES (4,1);
 
 @INSERT INTO T102 VALUES (4,4);

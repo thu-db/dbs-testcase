@@ -211,8 +211,6 @@ class TestCase:
             with open(ans_path) as file:
                 text = file.read()
                 item.load_ans(text)
-                print("[INFO] read", len(item.test_points),
-                    "test points for", item.name)
         return item
 
     def load_ans(self, text: str) -> bool:

@@ -7,7 +7,7 @@
 @INSERT INTO T2 VALUES (2, 1, '1'), (2, 2, '2'), (2, 3, '3');
 
 !ERROR
-primary
+duplicate
 @INSERT INTO T2 VALUES (1, 1, '7');
 
 ID1,ID2,NAME

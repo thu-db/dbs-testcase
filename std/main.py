@@ -96,8 +96,9 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
 
 # Map for MySQL errno
 error_map = {
-    1062: "primary",    # inserted primary key duplicated
-    1068: "primay",     # multiple primary keys
+    1062: "duplicate",  # duplicated entreis for pk or unique
+    1068: "primary",    # can not create multiple pk
+    1091: "primary",    # can not drop non-existing pk
     1452: "foreign",    # inserted foreign key not existing
     1451: "foreign",    # update/delete fails for foreign key
     1048: "null",       # not null check failed
