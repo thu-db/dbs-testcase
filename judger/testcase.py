@@ -191,6 +191,7 @@ class TestCase:
         self.desc = desc
         self.ans_path = ans_path
         self.enabled = None
+        self.optional = None
         self.test_points = [TestPoint(sql.strip()) for sql in sqls]
     
     @staticmethod

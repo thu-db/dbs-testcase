@@ -53,17 +53,29 @@ class Checker:
         self.runnning = False
 
     def print_depends(self):
-        lines = ["flowchart BT"]
+        lines = ["flowchart RL"]
+        lines_optional = ["flowchart BT"]
         for name, item in self.cases.items():
             item: TestCase
             content = f"{name}({item.score})"
             if item.flags:
                 content += f"\n({','.join(item.flags)})"
-            lines.append(f'{name}["{content}"]')
-        for name, item in self.cases.items():
+            line = f'{name}["{content}"]'
+            if item.optional:
+                lines_optional.append(line)
+            else:
+                lines.append(line)
+        for item in self.cases.values():
+            if item.name == "optional":
+                continue
             for name in item.deps:
-                lines.append(f"{item.name} --> {name}")
+                line = f"{item.name} --> {name}"
+                if item.optional:
+                    lines_optional.append(line)
+                else:
+                    lines.append(line)
         print("\n    ".join(lines))
+        print("\n    ".join(lines_optional))
         exit(0)
 
     def report(self):
@@ -116,6 +128,21 @@ class Checker:
         _case.enabled = True
         self.disabled_cases.remove(name)
         return True
+    
+    def case_optional(self, name):
+        _case: TestCase = self.cases[name]
+        if _case.optional is not None:
+            return _case.optional
+        if name == "optional":
+            _case.optional = True
+            return True
+        _case.optional = True
+        for dep in _case.deps:
+            if self.case_optional(dep):
+                return True
+        _case.optional = False
+        return False
+
 
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
@@ -136,6 +163,7 @@ class Checker:
                 traceback.print_exc()
 
         for name in self.cases:
+            self.case_optional(name)
             if not self.case_enabled(name):
                 self.disabled_cases.add(name)
         self.total_scores = sum(each.score for name, each in self.cases.items() if name not in self.disabled_cases)
