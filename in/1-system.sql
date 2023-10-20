@@ -1,5 +1,5 @@
 -- @Name: system
--- @Depends: init
+-- @Depends:
 -- @Flags: 
 -- @Description: Check basic database-level operation
 -- @Score: 5

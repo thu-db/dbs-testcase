@@ -22,6 +22,7 @@ DESC T0;
 
 -- Check error: one table has only one pk at most
 ALTER TABLE T0 ADD CONSTRAINT PK PRIMARY KEY (ID, ID2);
+DESC T0;
 -- 0.5pt
 
 
@@ -30,6 +31,7 @@ INSERT INTO T0 VALUES (1, 4, '4');
 ALTER TABLE T0 DROP PRIMARY KEY;
 INSERT INTO T0 VALUES (1, 4, '4');
 SELECT * FROM T0 WHERE T0.ID > 0 ;
+DESC T0;
 -- 0.5pt
 
 

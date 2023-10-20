@@ -1,0 +1,5 @@
+-- @Name: query-group
+-- @Depends: optional
+-- @Flags: group
+-- @Description: Group query
+-- @Score: 1

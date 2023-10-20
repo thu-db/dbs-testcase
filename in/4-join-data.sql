@@ -1,5 +1,5 @@
 -- @Name: join-data
--- @Depends: query-data-1
+-- @Depends: query-data-a
 -- @Flags: join
 -- @Description: Two table join with large amount data
 -- @Score: 3

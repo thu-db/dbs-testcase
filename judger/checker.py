@@ -24,6 +24,10 @@ class TimeAccumulator:
         self.time_ns += self.stop - self.start
         if self.time_ns > self.timeout_ns:
             raise TimeLimitExceeded
+    
+    @property
+    def past_seconds(self):
+        return self.time_ns / 1e9
 
 
 class Checker:
@@ -50,11 +54,17 @@ class Checker:
 
     def print_depends(self):
         lines = ["flowchart BT"]
-        lines += list(self.cases.keys())
-        for item in self.cases.values():
+        for name, item in self.cases.items():
+            item: TestCase
+            content = f"{name}({item.score})"
+            if item.flags:
+                content += f"\n({','.join(item.flags)})"
+            lines.append(f'{name}["{content}"]')
+        for name, item in self.cases.items():
             for name in item.deps:
                 lines.append(f"{item.name} --> {name}")
         print("\n    ".join(lines))
+        exit(0)
 
     def report(self):
         print("Passed cases:", colored(
@@ -74,7 +84,7 @@ class Checker:
         else:
             color = "red"
         print(
-            colored(f"Scores: {self.scores} / {self.total_scores}", color, attrs=['bold']))
+            colored(f"Scores: {self.scores} / {self.total_scores}, Time: {self.time_limiter.past_seconds:.3f}s", color, attrs=['bold']))
     
     def set_enabled(self, name):
         """
