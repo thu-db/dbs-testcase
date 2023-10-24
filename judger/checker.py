@@ -56,6 +56,7 @@ class Checker:
         # user program meta
         self.cmd = cmd
         self.env = dict(**os.environ, OMP_NUM_THREADS="1")
+        self.cwd = self.env.get("USER_PROG_CWD")
         self.memory_limit = 256 * 1024 * 1024
         # On windows kill() is exactly terminate(), so record the running states manually
         self.runnning = False
@@ -193,6 +194,8 @@ class Checker:
                 self.prog.stdin.flush()
                 lines = []
                 while True:
+                    if self.prog.poll() is not None:
+                        raise Exception("Progarm exit")
                     line: str = self.prog.stdout.readline()
                     if line.startswith("@"):
                         break
@@ -253,7 +256,7 @@ class Checker:
             print_exc(file=sys.stdout)
             print(colored(
                 "[CRITICAL] Meet error when running user program, try to restart...", "red", attrs=["bold"]))
-            if self.prog.poll():
+            if self.prog.poll() is not None:
                 self.runnning = False
             self.failed_cases.add(name)
             return False
@@ -279,9 +282,9 @@ class Checker:
         print("[INFO] User program initializing...")
         cmd = self.cmd + ["--init"]
         with self.time_limiter:
-            prog = subprocess.Popen(cmd, encoding='utf-8',
+            prog = subprocess.Popen(cmd, encoding='utf-8', cwd=self.cwd,
                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                    env=self.env)
+                                    stderr=sys.stderr, env=self.env)
             try:
                 prog.wait(60)
             except subprocess.TimeoutExpired:
@@ -302,8 +305,8 @@ class Checker:
             resource.setrlimit(resource.RLIMIT_AS,
                                (self.memory_limit, self.memory_limit))
 
-        self.prog = subprocess.Popen(self.cmd, encoding='utf-8', env=self.env,
-                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        self.prog = subprocess.Popen(self.cmd, encoding='utf-8', env=self.env, stderr=sys.stderr,
+                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=self.cwd,
                                      preexec_fn=set_memory_limit if sys.platform == "linux" else None)
         self.runnning = True
         print("[INFO] User program starts")

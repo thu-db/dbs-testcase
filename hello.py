@@ -74,15 +74,15 @@ TBL9
 """.strip(),
 ]
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if "--init" in sys.argv:
         exit(0)
-    # print("start", file=sys.stderr, flush=True)
     for e in ans:
         if input().strip() == "exit":
             exit(-1)
         if e:
             print(e)
         print("@done")
+    print("output done", file=sys.stderr, flush=True)
     while True:
         if input() == "exit":
             exit(0)

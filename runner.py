@@ -21,6 +21,9 @@ if __name__ == "__main__":
     args = parse_args()
     if args.std:
         environ["PYTHONPATH"] = environ.get("PYTHONPATH", "") + ":."
+    cmd = args.cmd
+    if "-b" not in cmd:
+        cmd.append("-b")
     checker = Checker(args.cmd, args.std, args.flags)
     checker.read_cases(args.in_dir, args.ans_dir)
     if args.graph:

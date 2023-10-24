@@ -2,6 +2,9 @@ import yaml
 import sys
 import subprocess
 import pathlib
+import os
+
+
 
 def process_commands(cmd):
     if isinstance(cmd, str):
@@ -15,6 +18,7 @@ def process_commands(cmd):
 def compile(conf):
     cmd = conf["commands"]
     shell = isinstance(cmd, str)
+    print("compile commands:", cmd)
     if subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr, shell=shell).returncode != 0:
         print("Compiled Error!")
         exit(-2)
@@ -25,8 +29,12 @@ def run(conf):
     if conf["flags"]:
         cmd += ["-f"] + conf["flags"]
     cmd += ["--"] + run_cmd
+    print("run checker commands:", cmd)
+    user_prog_cwd = os.getcwd()
+    env = os.environ.copy()
+    env["USER_PROG_CWD"] = user_prog_cwd
     subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr,
-                    cwd=pathlib.Path(__file__).parent)
+                    cwd=pathlib.Path(__file__).parent, env=env)
 
 if __name__ == "__main__":
     with open(sys.argv[1]) as file:
