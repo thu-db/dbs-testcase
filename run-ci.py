@@ -20,7 +20,7 @@ def process_commands(cmd):
 def compile(conf):
     cmd = conf["commands"]
     shell = isinstance(cmd, str)
-    print("compile commands:", cmd)
+    print("compile commands:", cmd, flush=True)
     if subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr, shell=shell).returncode != 0:
         print("Compiled Error!")
         exit(-2)
@@ -31,7 +31,7 @@ def run(conf):
     if conf["flags"]:
         cmd += ["-f"] + conf["flags"]
     cmd += ["--"] + run_cmd
-    print("run checker commands:", cmd)
+    print("run checker commands:", cmd, flush=True)
     user_prog_cwd = os.getcwd()
     env = os.environ.copy()
     env["USER_PROG_CWD"] = user_prog_cwd
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     if os.environ.get("GITLAB_CI"):
         with open("./.gitlab-ci.yml", "rb") as file:
             h = hashlib.sha1(file.read()).hexdigest()
-            print("gitlab-ci.yml file sha1:", h)
+            print("gitlab-ci.yml file sha1:", h, flush=True)
             assert h == os.environ.get("CI_FILE_HASH")
     with open("./testcase.yml") as file:
         conf = yaml.load(file, Loader=yaml.FullLoader)
