@@ -1,8 +1,10 @@
-import yaml
 import sys
 import subprocess
 import pathlib
 import os
+import hashlib
+
+import yaml
 
 
 
@@ -37,7 +39,10 @@ def run(conf):
                     cwd=pathlib.Path(__file__).parent, env=env)
 
 if __name__ == "__main__":
-    with open(sys.argv[1]) as file:
+    with open("./.gitlab-ci.yml", "rb") as file:
+        h = hashlib.sha1(file.read()).hexdigest()
+        assert h == "7c840922c78d83339ad7a76b302288e18a9545b2"
+    with open("./testcase.yml") as file:
         conf = yaml.load(file, Loader=yaml.FullLoader)
     compile(conf["compile"])
     run(conf["run"])
