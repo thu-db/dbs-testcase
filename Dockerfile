@@ -27,7 +27,7 @@ ENV ANLTR_VERSION=4.13.1
 
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip install --upgrade pip && \
-    pip install numpy prettytable antlr4-python3-runtime==${ANLTR_VERSION} && \
+    pip install numpy pyyaml prettytable antlr4-python3-runtime==${ANLTR_VERSION} && \
     rm -rf .cache
 
 WORKDIR /app

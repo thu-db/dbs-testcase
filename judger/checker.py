@@ -260,8 +260,7 @@ class Checker:
         try:
             self.init()
             for name in self.cases:
-                self.run_case(name)
-                if next(exit_counter):
+                if self.run_case(name) and next(exit_counter):
                     self.exit()
             self.exit()
         except TimeLimitExceeded:
