@@ -1,6 +1,7 @@
 import yaml
 import sys
 import subprocess
+import pathlib
 
 def process_commands(cmd):
     if isinstance(cmd, str):
@@ -9,11 +10,13 @@ def process_commands(cmd):
             exit(-1)
         cmd = cmd.split()
     assert isinstance(cmd, list)
+    print("cmd: ", cmd)
     return cmd
 
 def compile(conf):
-    cmd = process_commands(conf["commands"])
-    if subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr).returncode != 0:
+    cmd = conf["commands"]
+    shell = isinstance(cmd, str)
+    if subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr, shell=shell).returncode != 0:
         print("Compiled Error!")
         exit(-2)
 
@@ -23,7 +26,8 @@ def run(conf):
     if conf["flags"]:
         cmd += ["-f"] + conf["flags"]
     cmd += ["--"] + run_cmd
-    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
+    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr,
+                    cwd=pathlib.Path(__file__).parent)
 
 if __name__ == "__main__":
     with open(sys.argv[1]) as file:
