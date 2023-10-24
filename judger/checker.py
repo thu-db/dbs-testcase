@@ -6,8 +6,16 @@ from time import monotonic_ns
 
 from .testcase import TestCase, TestPoint, Answer
 from .error import CheckFailed, PointFailed, TimeLimitExceeded, InitTimeout
-from .termcolor import colored
+from .termcolor import colored as _colored
 
+def colored(*args, attrs=None, force_color=None, **kwargs):
+    if attrs is None:
+        attrs = ["bold"]
+    if force_color is None:
+        force_color = True
+    kwargs["attrs"] = attrs
+    kwargs["force_color"] = force_color
+    return _colored(*args, **kwargs)
 
 class TimeAccumulator:
     def __init__(self, timeout_ns):

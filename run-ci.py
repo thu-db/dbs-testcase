@@ -10,7 +10,6 @@ def process_commands(cmd):
             exit(-1)
         cmd = cmd.split()
     assert isinstance(cmd, list)
-    print("cmd: ", cmd)
     return cmd
 
 def compile(conf):
