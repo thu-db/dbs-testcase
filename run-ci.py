@@ -39,12 +39,11 @@ def run(conf):
                     cwd=pathlib.Path(__file__).parent, env=env)
 
 if __name__ == "__main__":
-    ci_hash = os.environ.get("CI_FILE_HASH")
-    if ci_hash:
+    if os.environ.get("GITLAB_CI"):
         with open("./.gitlab-ci.yml", "rb") as file:
             h = hashlib.sha1(file.read()).hexdigest()
             print("gitlab-ci.yml file sha1:", h)
-            assert h == ci_hash
+            assert h == os.environ.get("CI_FILE_HASH")
     with open("./testcase.yml") as file:
         conf = yaml.load(file, Loader=yaml.FullLoader)
     compile(conf["compile"])
