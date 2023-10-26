@@ -128,6 +128,7 @@ def parse_args():
     parser.add_argument("-p", "--password", required=True)
     parser.add_argument("-P", "--port", default=3306, type=int)
     parser.add_argument("--init", action="store_true")
+    parser.add_argument("-b", "--batch", action="store_true")
     parser.add_argument("host")
     return parser.parse_args()
 

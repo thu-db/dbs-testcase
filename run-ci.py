@@ -7,7 +7,6 @@ import hashlib
 import yaml
 
 
-
 def process_commands(cmd):
     if isinstance(cmd, str):
         if "'" in cmd or '"' in cmd:

@@ -4,19 +4,19 @@ N_NAME,N_NATIONKEY
 VIETNAM,21
 @SELECT NATION.N_NAME, NATION.N_NATIONKEY FROM NATION, REGION WHERE NATION.N_REGIONKEY = REGION.R_REGIONKEY AND NATION.N_NATIONKEY > 20 AND REGION.R_NAME = 'ASIA';
 
-S_SUPPKEY,S_NAME,S_ADDRESS,S_NATIONKEY,S_PHONE,S_ACCTBAL,S_COMMENT,N_NATIONKEY,N_NAME,N_REGIONKEY,N_COMMENT
-49,Supplier#000000049,Nvq 6macF4GtJvz,24,34-211-567-6800,9915.24,the finally bold dependencies. dependencies after the fluffily final foxes boost fluffi,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-234,Supplier#000000234,iMrk7HUD87at3IIh4rBi,24,34-187-193-2209,9957.00,nag furiously pending dependencies. unusual deposits integrate fur,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-389,Supplier#000000389,FW96liSdq3noHJpwM,24,34-885-883-5717,9467.35,nag ironic packages. ironic pinto beans would sleep furiously. regular realms wake across the ,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-438,Supplier#000000438,cePboEvTZ6IfUAG 8asHxVbEmZnLSph9z01,24,34-502-705-5611,9291.35,hin deposits. blithely pending deposits sleep slyly. slyl,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-1343,Supplier#000001343,e3NKukdF0m3Ecc7iuIbk5KEif8B8eGYghOcQm,24,34-518-260-7874,9449.66,xpress requests nag against the blithely even courts. fluff,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-1891,Supplier#000001891,nmvfVVyBMUitm1hiZv,24,34-334-635-8569,9710.42,e carefully special theodolites. carefully even requests nag among,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-1985,Supplier#000001985,iNpX5StxnUW8DlgToWvv9kZ Uk,24,34-968-184-3570,9542.91,sly regular dependencies against the bli,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-2103,Supplier#000002103,6RnHhF2YEr2p3tBPCxAnNQsw apIQyilDz,24,34-998-551-1845,9105.42,riously unusual instructions. ironic epit,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-2148,Supplier#000002148,yVDlpqCxG10tM8dm NNVKv,24,34-880-232-8537,9627.72,ng deposits. express platelets use among the accounts. furiously even theodolites affix quickly und,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-2657,Supplier#000002657,yPbr8IqeYqsj5l4mwKzX,24,34-270-666-7655,9263.88,ts. dolphins above the regular pack,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-2872,Supplier#000002872,MJ9iMo lUlY00f4glR,24,34-995-365-6753,9919.62,as wake furiously regular accounts. slyly close pinto beans haggle furiousl,24,UNITED STATES,1,y final packages. slow foxes cajole quickly. quickly silent platelets breach ironic accounts. unusual pinto be
-@SELECT * FROM SUPPLIER, NATION WHERE SUPPLIER.S_NATIONKEY = NATION.N_NATIONKEY AND NATION.N_NATIONKEY = 24 AND SUPPLIER.S_ACCTBAL > 8888.8;
+S_SUPPKEY,S_NAME,S_NATIONKEY,N_NAME
+49,Supplier#000000049,24,UNITED STATES
+234,Supplier#000000234,24,UNITED STATES
+389,Supplier#000000389,24,UNITED STATES
+438,Supplier#000000438,24,UNITED STATES
+1343,Supplier#000001343,24,UNITED STATES
+1891,Supplier#000001891,24,UNITED STATES
+1985,Supplier#000001985,24,UNITED STATES
+2103,Supplier#000002103,24,UNITED STATES
+2148,Supplier#000002148,24,UNITED STATES
+2657,Supplier#000002657,24,UNITED STATES
+2872,Supplier#000002872,24,UNITED STATES
+@SELECT SUPPLIER.S_SUPPKEY, SUPPLIER.S_NAME, SUPPLIER.S_NATIONKEY, NATION.N_NAME FROM SUPPLIER, NATION WHERE SUPPLIER.S_NATIONKEY = NATION.N_NATIONKEY AND NATION.N_NATIONKEY = 24 AND SUPPLIER.S_ACCTBAL > 8888.8;
 
 C_NAME,S_NAME
 Customer#000007011,Supplier#000000022

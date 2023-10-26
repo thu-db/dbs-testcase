@@ -3,13 +3,15 @@ class PointFailed(Exception):
 
 
 class CheckFailed(Exception):
-    def __init__(self, msg, ans, out):
+    def __init__(self, msg, ans=None, out=None):
         self.msg = msg
         self.ans = ans
         self.out = out
 
     def __repr__(self) -> str:
-        return f"CheckFailed: {self.msg}, but expected is [{self.ans}] and output is [{self.out}]"
+        if self.ans and self.out:
+            return f"CheckFailed: {self.msg}, but expected is [{self.ans}] and output is [{self.out}]"
+        return f"CheckFailed: {self.msg}"
 
 class TimeLimitExceeded(Exception):
     pass

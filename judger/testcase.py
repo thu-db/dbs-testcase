@@ -1,6 +1,6 @@
 import re
 
-from .error import assert_eq, check_constraint_error
+from .error import assert_eq, check_constraint_error, CheckFailed
 
 
 class PointFlags:
@@ -126,7 +126,37 @@ class Answer:
 
     def to_regular_data(self):
         regular_headers = sorted(self.headers)
+        print(self.headers, regular_headers)
         return sorted(",".join(each[h] for h in regular_headers) for each in self.data)
+
+    def match_ordered_headers(self, headers):
+        for i, (h1, h2) in enumerate(zip(self.headers, headers)):
+            if "." not in h1:
+                h2 = h2.split(".", 1)[-1]            
+            assert_eq(f"Check header {i + 1}", h1, h2.split(".", 1)[-1])
+
+    def match_unordered_headers(self, headers):
+        h1s = set(self.headers)
+        h2s = set(headers)
+        assert_eq("Check different column names count", len(h1s), len(h2s))
+        headers_map = {}
+        common = h1s & h2s
+        for h in common:
+            headers_map[h] = h
+        h1s -= common
+        h2s -= common
+        for h1 in h1s:
+            if "." in h1:
+                raise CheckFailed(f"Expected header {h1} not found")
+        for h2 in h2s:
+            h1 = h2.split(".", 1)[-1]
+            if h1 in h1s:
+                h1s.remove(h1)
+                headers_map[h2] = h1
+        if h1s:
+            raise CheckFailed(f"Expected headers {', '.join(list(h1s))} not found")
+        return headers_map
+
 
     def check(self, other: "Answer"):
         if self.flags.is_desc:
@@ -135,10 +165,10 @@ class Answer:
         if not self.headers:
             return
         if self.flags.colume_order:
-            assert_eq("Check headers tuple", self.headers, other.headers)
+            self.match_ordered_headers(other.headers)
+            other.headers = self.headers
         else:
-            assert_eq("Check headers set", set(
-                self.headers), set(other.headers))
+            other.headers = self.match_unordered_headers(other.headers)
         assert_eq("Check rows count", len(self.data), len(other.data))
         # Check !ERROR
         if self.headers[0] == "!ERROR":
