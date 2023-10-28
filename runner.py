@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("--graph", action="store_true", help="print mermaid graph and exit")
     parser.add_argument("cmd", nargs="+", help="commands to run user program")
     parser.add_argument("-f", "--flags", nargs="*", help="flags to enable these testcases")
+    parser.add_argument("-c", "--cases", nargs="*", help="Only run the listed cases without initialization")
     return parser.parse_args()
 
 
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     cmd = args.cmd
     if "-b" not in cmd:
         cmd.append("-b")
-    checker = Checker(args.cmd, args.std, args.flags)
+    checker = Checker(args.cmd, args.std, args.flags, args.cases)
     checker.read_cases(args.in_dir, args.ans_dir)
     if args.graph:
         checker.print_depends()

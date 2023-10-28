@@ -39,12 +39,13 @@ class TimeAccumulator:
 
 
 class Checker:
-    def __init__(self, cmd, gen_ans, flags) -> None:
+    def __init__(self, cmd, gen_ans, flags, cases) -> None:
         # judgement meta
         self.gen_ans = gen_ans
         self.prog: subprocess.Popen = None
         self.flags = set(flags or [])
-        self.cases = {}
+        self.cases = cases
+        self.name_to_case = {}
         self.scores = 0
         self.total_scores = 0
         self.time_limiter = TimeAccumulator(3600 * 1e9)
@@ -64,7 +65,7 @@ class Checker:
     def print_depends(self):
         lines = ["flowchart RL"]
         lines_optional = ["flowchart BT"]
-        for name, item in self.cases.items():
+        for name, item in self.name_to_case.items():
             item: TestCase
             content = f"{name}({item.score})"
             if item.flags:
@@ -74,7 +75,7 @@ class Checker:
                 lines_optional.append(line)
             else:
                 lines.append(line)
-        for item in self.cases.values():
+        for item in self.name_to_case.values():
             if item.name == "optional":
                 continue
             for name in item.deps:
@@ -111,7 +112,7 @@ class Checker:
         """
         It is no use now, but may be used in future.
         """
-        _case: TestCase = self.cases[name]
+        _case: TestCase = self.name_to_case[name]
         if _case.enabled:
             return
         _case.enabled = True
@@ -121,7 +122,7 @@ class Checker:
             self.set_enabled(dep)
 
     def case_enabled(self, name):
-        _case: TestCase = self.cases[name]
+        _case: TestCase = self.name_to_case[name]
         if _case.enabled is not None:
             return _case.enabled
         self.disabled_cases.add(name)
@@ -140,7 +141,7 @@ class Checker:
         return True
 
     def case_optional(self, name):
-        _case: TestCase = self.cases[name]
+        _case: TestCase = self.name_to_case[name]
         if _case.optional is not None:
             return _case.optional
         if name == "optional":
@@ -166,19 +167,22 @@ class Checker:
                 continue
             try:
                 item = TestCase.from_file(in_path, ans_path, self.gen_ans)
-                self.cases[item.name] = item
+                self.name_to_case[item.name] = item
             except Exception:
                 import traceback
                 traceback.print_exc()
-
-        for name in self.cases:
+        if self.cases:
+            self.total_scores = sum(self.name_to_case[name].score for name in self.cases)
+            print("[INFO] Only run case(s):", ", ".join(self.cases))
+            return
+        for name in self.name_to_case:
             self.case_optional(name)
             if not self.case_enabled(name):
                 self.disabled_cases.add(name)
-        self.total_scores = sum(each.score for name, each in self.cases.items(
-        ) if name not in self.disabled_cases)
-        print("[INFO] read", len(self.cases), "cases in total,",
-              len(self.cases) - len(self.disabled_cases), "cases enabled")
+        self.total_scores = sum(each.score for name, each in self.name_to_case.items()
+                                if name not in self.disabled_cases)
+        print("[INFO] read", len(self.name_to_case), "cases in total,",
+              len(self.name_to_case) - len(self.disabled_cases), "cases enabled")
 
     def _run_case(self, _case: TestCase):
         if self.gen_ans:
@@ -221,19 +225,20 @@ class Checker:
         if self.gen_ans:
             file.close()
 
-    def run_case(self, name):
+    def run_case(self, name, skip_dependency_check=False):
         if name in self.passed_cases:
             return True
-        if name in self.failed_cases or name in self.skipped_cases or name in self.disabled_cases:
-            return False
-        _case: TestCase = self.cases[name]
-        for depend_case in _case.deps:
-            if depend_case in self.passed_cases:
-                continue
-            if depend_case in self.failed_cases or depend_case in self.skipped_cases or not self.run_case(depend_case):
-                self.skipped_cases.add(name)
+        _case: TestCase = self.name_to_case[name]
+        if not skip_dependency_check:
+            if name in self.failed_cases or name in self.skipped_cases or name in self.disabled_cases:
                 return False
-            # run depend_case successfully: continue
+            for depend_case in _case.deps:
+                if depend_case in self.passed_cases:
+                    continue
+                if depend_case in self.failed_cases or depend_case in self.skipped_cases or not self.run_case(depend_case):
+                    self.skipped_cases.add(name)
+                    return False
+                # run depend_case successfully: continue
         try:
             print("[INFO] Case", name, "is running")
             self._run_case(_case)
@@ -267,13 +272,19 @@ class Checker:
                 for _ in range(n - 1):
                     yield False
                 yield True
-        exit_counter = count_n_generator(5)
         try:
-            self.init()
-            for name in self.cases:
-                if self.run_case(name) and next(exit_counter):
-                    self.exit()
-            self.exit()
+            if self.cases:
+                # Skip initialization
+                for name in self.cases:
+                    self.run_case(name, True)
+                self.exit()
+            else:
+                exit_counter = count_n_generator(5)
+                self.init()
+                for name in self.name_to_case:
+                    if self.run_case(name) and next(exit_counter):
+                        self.exit()
+                self.exit()
         except TimeLimitExceeded:
             print(colored("[ERROR] Time Limit Exceeded", "red"))
         return self.scores

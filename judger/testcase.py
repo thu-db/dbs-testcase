@@ -126,14 +126,13 @@ class Answer:
 
     def to_regular_data(self):
         regular_headers = sorted(self.headers)
-        print(self.headers, regular_headers)
         return sorted(",".join(each[h] for h in regular_headers) for each in self.data)
 
     def match_ordered_headers(self, headers):
         for i, (h1, h2) in enumerate(zip(self.headers, headers)):
             if "." not in h1:
                 h2 = h2.split(".", 1)[-1]            
-            assert_eq(f"Check header {i + 1}", h1, h2.split(".", 1)[-1])
+            assert_eq(f"Check header {i + 1}", h1, h2)
 
     def match_unordered_headers(self, headers):
         h1s = set(self.headers)
