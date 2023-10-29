@@ -5,14 +5,17 @@
 用来本地评测的入口文件是 `runner.py`，使用时你理应在本文件夹下启动评测器，将你编译好的程序的相对路径或者绝对路径复制到下面的参数中，参考指令如下：
 
 ```bash
-python3 runner.py -- /path/to/your/prog -f query data
+python3 runner.py -f query data -- /path/to/your/prog
 ```
 
-部分测例会有 `flag` 标记，表明该测例只有给出 flag 后才会显式地启动该测例，上述例子中便启用了两个 flag，分别是 `query` 和 `data`，如果你不希望启用任何 flag，则可以不使用 `-f` 参数，或者提供无效参数如 `-f no_use`。
+注意:
+
+- 用 `--` 是为了将 `runner.py` 的参数与你的 `prog` 参数隔开，在你的程序后面的参数不会被传给 `runner.py`，例如如果指令写成 `python3 runner.py -- /path/to/your/prog -f query data`，则 `runner.py` 不会收到 `-f` 参数。
+-  部分测例会有 `flag` 标记，表明该测例只有给出 flag 后才会显式地启动该测例，上述例子中便启用了两个 flag，分别是 `query` 和 `data`，如果你不希望启用任何 flag，则可以不使用 `-f` 参数，或者提供无效参数如 `-f no_use`。
 
 在 CI 评测时为了执行编译流程并解决难以找到自己可执行程序的路径的问题，另外编写了一个 `run-ci.py` 进行上层封装，它被期望在你自己的项目中运行，会读取你项目根目录下的 `testcase.yml` 配置文件并据此进行操作：
  
-0. 验证 CI 文件没有被篡改
+0. 验证 CI 文件的 hash
 1. 以你的项目根目录为工作目录，根据配置文件 `compile` 段进行编译
 2. 以 `dbs-testcase` 的根目录为工作目录，运行 `runner.py`，但是在启用你的程序时会将工作目录切换回你的项目根目录
 
@@ -36,6 +39,18 @@ python3 /path/to/dbs-testcase/run-ci.py
 
 简单来说你不必研究 `run-ci.py` 的工作原理，你只需要记住在你自己项目的 `dbs-testcase.yml` 中的 `commands` 都是以你项目的根目录为参考即可。
 
+## 指定测例
+
+有两种情况下你可能希望指定几个测试点进行运行:
+
+1. 你自己编写了测例和对应的答案，你希望只运行这几个测例
+2. 你加载了数据集 DATASET 后希望基于此进行查询，不要花数分钟至数十分钟加载一遍再运行
+
+为了支持这样的需求，提供了 `-c` 参数，你可以在后面加上空格隔开的若干个测例名来指定评测器无视依赖关系、flag 等约束直接运行这几个测例，顺序与你给出的测例名顺序一致。例如
+```bash
+python3 runner.py -f query data -- /path/to/your/prog
+```
+
 ## 数据说明
 
 注意，由于评测器的设计问题，测例有一些需要考虑的约定：
@@ -51,6 +66,12 @@ python3 /path/to/dbs-testcase/run-ci.py
 ```bash
 python runner.py --std -f [flags, ...] -- python std/main.py <args...>
 ```
+
+## BUG声明
+
+本评测器于2023年秋季学期开发，因时间仓促没能经过充分测试，难免会有BUG。实验动手较早的同学可能在使用过程中遇到若干评测器BUG，属于正常情况，将这些问题反馈给助教或者直接提交 PR 都有机会得到大作业加分，详见线上文档-CI说明-激励机制。
+
+注：提交 issue、PR 等请在 Github 仓库操作，GitLab 仓库仅作为校内 mirror。
 
 ## TODO
 
