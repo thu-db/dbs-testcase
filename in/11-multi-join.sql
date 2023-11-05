@@ -2,7 +2,7 @@
 -- @Depends: optional
 -- @Flags: mj
 -- @Description: Index on large tables
--- @Score: 8
+-- @Score: 6
 
 USE DATASET;
 

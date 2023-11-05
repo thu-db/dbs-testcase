@@ -69,7 +69,7 @@ class Checker:
             item: TestCase
             content = f"{name}({item.score})"
             if item.flags:
-                content += f"\n({','.join(item.flags)})"
+                content += f"\\n({','.join(item.flags)})"
             line = f'{name}["{content}"]'
             if item.optional:
                 lines_optional.append(line)
@@ -157,7 +157,7 @@ class Checker:
     def read_cases(self, in_dir, ans_dir):
         in_dir = Path(in_dir)
         ans_dir = Path(ans_dir)
-        for in_path in in_dir.iterdir():
+        for in_path in sorted(in_dir.iterdir()):
             if in_path.suffix != ".sql":
                 print("[WARN] Ignore non-sql file in in_dir:", in_path)
                 continue

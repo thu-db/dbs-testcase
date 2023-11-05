@@ -2,7 +2,7 @@
 -- @Depends: query-a
 -- @Flags: pk
 -- @Description: Basic primary key testing
--- @Score: 1
+-- @Score: 2
 
 USE DB2;
 

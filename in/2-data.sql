@@ -2,7 +2,7 @@
 -- @Depends: table-data
 -- @Flags: data
 -- @Description: Load large amount of data
--- @Score: 1
+-- @Score: 0
 
 USE DATASET;
 
