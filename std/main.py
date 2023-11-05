@@ -102,6 +102,7 @@ error_map = {
     1452: "foreign",    # inserted foreign key not existing
     1451: "foreign",    # update/delete fails for foreign key
     1048: "null",       # not null check failed
+    1292: "date",       # incorrect date value
 }
 
 def run_sql(cur: MySQLCursor, sql: str):
