@@ -110,5 +110,5 @@ a
 @SELECT a FROM TBL WHERE TBL.b > '2';
 
 a
-@SELECT a FROM TBL WHERE TBL.b > '2' and TBL.b < '3';
+@SELECT a FROM TBL WHERE TBL.b > '2' AND TBL.b < '3';
 
