@@ -102,7 +102,7 @@ class Checker:
         elif self.scores >= self.total_scores * 0.8:
             color = "blue"
         elif self.scores >= self.total_scores * 0.6:
-            color = "yello"
+            color = "yellow"
         else:
             color = "red"
         print(

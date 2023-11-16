@@ -46,9 +46,9 @@ python3 /path/to/dbs-testcase/run-ci.py
 1. 你自己编写了测例和对应的答案，你希望只运行这几个测例
 2. 你加载了数据集 DATASET 后希望基于此进行查询，不要花数分钟至数十分钟加载一遍再运行
 
-为了支持这样的需求，提供了 `-c` 参数，你可以在后面加上空格隔开的若干个测例名来指定评测器无视依赖关系、flag 等约束直接运行这几个测例，顺序与你给出的测例名顺序一致。例如
+为了支持这样的需求，提供了 `-c` 参数，你可以在后面加上空格隔开的若干个**测例名**来指定评测器无视依赖关系、flag 等约束直接运行这几个测例，顺序与你给出的测例名顺序一致。例如
 ```bash
-python3 runner.py -f query data -- /path/to/your/prog
+python3 runner.py -c query data -- /path/to/your/prog
 ```
 
 ## 数据说明
@@ -66,6 +66,8 @@ python3 runner.py -f query data -- /path/to/your/prog
 ```bash
 python runner.py --std -f [flags, ...] -- python std/main.py <args...>
 ```
+
+注意标程对测例进行了高度定制化，包含许多并不优雅的实现，它只需要对于标准测例能给出正确答案，试图用自定义测例hack标程是毫无意义的。
 
 ## BUG声明
 
