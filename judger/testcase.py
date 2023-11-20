@@ -177,7 +177,8 @@ class Answer:
         for i, (r1, r2) in enumerate(zip(self.to_regular_data(), other.to_regular_data())):
             assert_eq(f"Check row {i+1}", r1, r2)
         if self.flags.order_by:
-            keys = [tuple(each[field] for field in self.flags.order_by)
+            # Note: Ordered field shouldn't be string, or it will be difficult to process
+            keys = [tuple(float(each[field]) for field in self.flags.order_by)
                     for each in other.data]
             if self.flags.reversed_order:
                 for i in range(1, len(keys)):

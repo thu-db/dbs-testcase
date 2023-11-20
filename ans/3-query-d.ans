@@ -78,7 +78,7 @@ a,b,c
 5,5,1.00
 @SELECT * FROM TBL4;
 
-@DELETE FROM TBL4 WHERE a = 3 and b = '3';
+@DELETE FROM TBL4 WHERE a = 3 AND b = '3';
 
 a,b,c
 5,5,3.00
@@ -144,7 +144,7 @@ a,b,c
 2,4,5.00
 @SELECT * FROM TBL4;
 
-@DELETE FROM TBL4 WHERE b = '4' and c <= 2.0;
+@DELETE FROM TBL4 WHERE b = '4' AND c <= 2.0;
 
 a,b,c
 5,5,3.00
@@ -219,7 +219,7 @@ a,b,c
 4,4,1.00
 @SELECT * FROM TBL4;
 
-@DELETE FROM TBL4 WHERE b < '2' and c > 3.0;
+@DELETE FROM TBL4 WHERE b < '2' AND c > 3.0;
 
 a,b,c
 5,5,3.00

@@ -86,13 +86,18 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
             # It's weird that mariadb return type as str, but mysql return bytes
             if isinstance(t, bytes):
                 t = t.decode()
-            if "int" in t:
-                return "INT"
+            if t == "double":
+                t = "float"
             return t.upper()
         data = [(row[0], type_fixer(row[1]), row[2], row[4]) for row in data]
         table_name = sql.replace(";", "").split()[1]
         data += parse_constraints(cur, table_name)
     return headers, data
+
+def process_sql(sql: str):
+    if "CREATE TABLE" in sql:
+        sql = sql.replace("FLOAT", "DOUBLE")
+    return sql
 
 # Map for MySQL errno
 error_map = {
@@ -106,6 +111,7 @@ error_map = {
 }
 
 def run_sql(cur: MySQLCursor, sql: str):
+    sql = process_sql(sql)
     try:
         cur.execute(sql)
     except mysql.connector.DatabaseError as e:
@@ -156,7 +162,10 @@ def main():
         init(cur)
     else:
         while True:
-            sql = input().strip()
+            try:
+                sql = input().strip()
+            except EOFError:
+                break
             if sql == "exit":
                 break
             if not sql.endswith(";"):
