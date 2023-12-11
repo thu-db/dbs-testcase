@@ -10,7 +10,7 @@ mysql_databases = set(["information_schema", "mysql",
                        "performance_schema", "sys",
                        # Note: PROTECTED is a user-specific database not to avoid dropping
                        "PROTECTED"])
-desc_re = re.compile("^DESC\s")
+drop_fk_re = re.compile(r"ALTER\s*TABLE\s*(\w+)\s*DROP\s*FOREIGN\s*KEY\s*(\w+);")
 
 fields_re = r"\((`\w+`(?:,\s*`\w+`)*)\)"
 pk_regex = re.compile(fr"^\s*PRIMARY\s+KEY.*{fields_re}", flags=re.MULTILINE)
@@ -99,6 +99,17 @@ def process_sql(sql: str):
         sql = sql.replace("FLOAT", "DOUBLE")
     return sql
 
+def finish_sql(cur: MySQLCursor, sql):
+    drop_fk = drop_fk_re.match(sql)
+    if drop_fk:
+        table, key = drop_fk.groups()
+        try:
+            # Drop the implicit index key
+            cur.execute(f"ALTER TABLE {table} DROP KEY {key}")
+        except mysql.connector.DatabaseError:
+            # User has defined an explicit index key
+            pass
+
 # Map for MySQL errno
 error_map = {
     1062: "duplicate",  # duplicated entreis for pk or unique
@@ -122,11 +133,13 @@ def run_sql(cur: MySQLCursor, sql: str):
         raise e
 
     if not cur.with_rows:
+        finish_sql(cur, sql)
         return
     headers, data = process_results(cur, sql, cur.column_names, cur.fetchall())
     print(*headers, sep=',')
     for row in data:
         print(*row, sep=',')
+    
 
 
 def parse_args():
