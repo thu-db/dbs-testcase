@@ -13,7 +13,7 @@ a,INT,NO,NULL
 b,VARCHAR(12),NO,NULL
 c,FLOAT,NO,NULL
 
-INDEX (a)
+INDEX (a);
 @DESC TBL9;
 
 a,b,c

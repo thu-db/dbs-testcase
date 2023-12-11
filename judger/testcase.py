@@ -94,13 +94,12 @@ class Constraint:
         assert_eq("Check union keys number", len(self.uks), len(other.uks))
         for uk, ouk in zip(self.uks, other.uks):
             # uk["name"] and assert_eq("Check union key name", uk["name"], ouk["name"])
-            assert_eq("Check union key fields",
-                      uk["fields"], ouk["fileds"])
+            assert_eq("Check union key fields", uk["fields"], ouk["fields"])
         # check idx
         assert_eq("Check index number", len(self.idx), len(other.idx))
         for idx, oidx in zip(self.idx, other.idx):
             # idx["name"] and assert_eq("Checker index name", idx["name"], oidx["name"])
-            assert_eq("Check index fields", idx["fields"], oidx["fileds"])
+            assert_eq("Check index fields", idx["fields"], oidx["fields"])
 
 
 class Answer:

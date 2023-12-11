@@ -47,9 +47,9 @@ def parse_constraints(cur: MySQLCursor, table):
         lines.append(
             [f"FOREIGN KEY ({', '.join(fk['fields'])}) REFERENCES {fk['table']}({', '.join(fk['ref_fields'])});"])
     for uk in uks:
-        lines.append([f"UNIQUE ({', '.join(uk)})"])
+        lines.append([f"UNIQUE ({', '.join(uk)});"])
     for idx in idxs:
-        lines.append([f"INDEX ({', '.join(idx)})"])
+        lines.append([f"INDEX ({', '.join(idx)});"])
     return lines
 
 
