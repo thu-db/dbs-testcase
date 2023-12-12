@@ -24,8 +24,8 @@ RUN curl https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-late
 
 ENV PATH="/home/tester/miniconda3/bin:/home/tester/.cargo/bin:$PATH"
 
-# modified from https://github.com/rust-lang/docker-rust/blob/master/1.73.0/bookworm/Dockerfile
-ENV RUST_VERSION=1.74.0
+# modified from https://github.com/rust-lang/docker-rust/blob/master/1.74.1/bookworm/Dockerfile
+ENV RUST_VERSION=1.74.1
 
 RUN rustArch='x86_64-unknown-linux-gnu'; \
     rustupSha256='0b2f6c8f85a3d02fde2efc0ced4657869d73fccfce59defb4e8d29233116e6db' ; \
