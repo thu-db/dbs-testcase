@@ -109,6 +109,12 @@ def finish_sql(cur: MySQLCursor, sql):
         except mysql.connector.DatabaseError:
             # User has defined an explicit index key
             pass
+    
+    row_count_ops = ["INSERT", "UPDATE", "DELETE", "LOAD"]
+    if any(sql.startswith(op) for op in row_count_ops):
+        print("rows")
+        print(cur.rowcount)
+
 
 # Map for MySQL errno
 error_map = {
@@ -131,10 +137,9 @@ def run_sql(cur: MySQLCursor, sql: str):
             print(error_map[e.errno])
             return
         raise e
-
+    
     if not cur.with_rows:
-        finish_sql(cur, sql)
-        return
+        return finish_sql(cur, sql)
     headers, data = process_results(cur, sql, cur.column_names, cur.fetchall())
     print(*headers, sep=',')
     for row in data:

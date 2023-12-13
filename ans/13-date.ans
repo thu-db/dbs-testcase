@@ -9,22 +9,32 @@ DATE,DATE,YES,NULL
 PRIMARY KEY (ID);
 @DESC Tdate;
 
+rows
+4
 @INSERT INTO Tdate VALUES (1, '2020-01-01'), (2, '2020-01-02'), (3, '2021-02-03'), (4, '2022-01-01');
 
 !ERROR
 date
 @INSERT INTO Tdate VALUES (5, '2023-02-29');
 
+rows
+1
 @INSERT INTO Tdate VALUES (6, '2023-02-28');
 
+rows
+1
 @INSERT INTO Tdate VALUES (7, '2020-02-29');
 
+rows
+1
 @INSERT INTO Tdate VALUES (8, '2000-02-29');
 
 !ERROR
 date
 @INSERT INTO Tdate VALUES (9, '2100-02-29');
 
+rows
+1
 @INSERT INTO Tdate VALUES (10, '2400-02-29');
 
 !ERROR
@@ -35,12 +45,16 @@ date
 date
 @INSERT INTO Tdate VALUES (12, '2023-04-31');
 
+rows
+1
 @INSERT INTO Tdate VALUES (13, '2023-08-31');
 
 !ERROR
 date
 @INSERT INTO Tdate VALUES (14, '2023-09-31');
 
+rows
+1
 @INSERT INTO Tdate VALUES (15, '2023-12-31');
 
 !ERROR

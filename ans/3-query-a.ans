@@ -3,12 +3,16 @@
 a,b,c
 @SELECT * FROM TBL;
 
+rows
+1
 @INSERT INTO TBL VALUES (1, '1', 1.0);
 
 a,b,c
 1,1,1.00
 @SELECT * FROM TBL;
 
+rows
+5
 @INSERT INTO TBL VALUES (2, '2', 2.0), (3, '3', 3.0), (4, '4', 4.0), (5, '5', 5.0), (6, '6', 6.0);
 
 a,b,c
@@ -20,6 +24,8 @@ a,b,c
 6,6,6.00
 @SELECT * FROM TBL WHERE TBL.a >= 0;
 
+rows
+2
 @INSERT INTO TBL VALUES (2, '2', 2.0), (3, '3', 3.0);
 
 a,b,c
