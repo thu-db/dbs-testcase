@@ -126,7 +126,7 @@ class Answer:
             return sorted(",".join(each) for each in self.data)
         # For SELECT *, there can not be duplicated headers
         header_to_idx = {h: idx for idx, h in enumerate(self.headers)}
-        indexes = [header_to_idx[header] for _, header in sorted(self.headers_map.items())]
+        indexes = [header_to_idx[header] for header, _ in sorted(self.headers_map.items(), key=itemgetter(1))]
         return sorted(",".join((each[i] for i in indexes)) for each in self.data)
 
     def match_ordered_headers(self, headers):
