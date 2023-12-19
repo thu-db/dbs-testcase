@@ -1,4 +1,5 @@
 import re
+from operator import itemgetter
 
 from .error import assert_eq, check_constraint_error, CheckFailed
 
@@ -117,20 +118,16 @@ class Answer:
                 lines = lines[:blank_line]
             else:
                 self.constraint = Constraint([])
-        self.data = [
-            {
-                self.headers[i]: val for i, val in enumerate(line.split(','))
-            } for line in lines[1:]
-        ]
+        self.data = [line.split(",") for line in lines[1:]]
+
 
     def to_regular_data(self):
         if self.flags.colume_order:
-            return sorted(",".join(each.values()) for each in self.data)
-        if isinstance(self.headers, list):
-            regular_headers = sorted(self.headers)
-        else:
-            regular_headers = [x[0] for x in sorted(self.headers.items(), key=lambda x: x[1])]
-        return sorted(",".join((each[h] for h in regular_headers)) for each in self.data)
+            return sorted(",".join(each) for each in self.data)
+        # For SELECT *, there can not be duplicated headers
+        header_to_idx = {h: idx for idx, h in enumerate(self.headers)}
+        indexes = [header_to_idx[header] for _, header in sorted(self.headers_map.items())]
+        return sorted(",".join((each[i] for i in indexes)) for each in self.data)
 
     def match_ordered_headers(self, headers):
         for i, (h1, h2) in enumerate(zip(self.headers, headers)):
@@ -171,12 +168,13 @@ class Answer:
             self.match_ordered_headers(other.headers)
             other.headers = self.headers
         else:
-            other.headers = self.match_unordered_headers(other.headers)
+            self.headers_map = {h: h for h in self.headers}
+            other.headers_map = self.match_unordered_headers(other.headers)
         assert_eq("Check rows count", len(self.data), len(other.data))
         # Check !ERROR
         if self.headers[0] == "!ERROR":
-            assert_eq("Check error type", check_constraint_error(self.data[0]["!ERROR"]), 
-                      check_constraint_error(other.data[0]["!ERROR"]))
+            assert_eq("Check error type", check_constraint_error(self.data[0][0]), 
+                      check_constraint_error(other.data[0][0]))
             return
         for i, (r1, r2) in enumerate(zip(self.to_regular_data(), other.to_regular_data())):
             assert_eq(f"Check row {i+1}", r1, r2)
