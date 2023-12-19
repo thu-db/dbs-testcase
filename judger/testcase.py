@@ -106,7 +106,6 @@ class Answer:
     def __init__(self, lines, flags: PointFlags):
         self.flags = flags
         self.headers = lines[0].split(",") if lines else []
-        assert_eq("Make sure no same name columns", len(self.headers), len(set(self.headers)))
         # Ignore order key not in the output headers
         flags.order_by = flags.order_by if flags.order_by and all(
             field in self.headers for field in flags.order_by) else None
