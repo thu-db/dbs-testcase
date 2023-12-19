@@ -19,6 +19,15 @@ fk_regex = re.compile(
     fr"^\s*CONSTRAINT.*FOREIGN\s+KEY\s+{fields_re}\s+REFERENCES\s+`(\w*)`\s+{fields_re}", flags=re.MULTILINE)
 idx_regex = re.compile(fr"^\s*KEY.*{fields_re}", flags=re.MULTILINE)
 
+rename_regex = re.compile(r"SELECT (.*?) FROM")
+def rename_func(m):
+    names = m.group(1).split(",")
+    for i, name in enumerate(names):
+        name = name.strip()
+        if name != '*':
+            names[i] = f'{name} AS `{name}`'
+    return m.group(0).replace(m.group(1), ", ".join(names))
+
 
 def fields_split(s: str):
     return tuple(s.replace("`", "").replace(" ", "").split(","))
@@ -97,6 +106,7 @@ def process_results(cur: MySQLCursor, sql: str, headers, data):
 def process_sql(sql: str):
     if "CREATE TABLE" in sql:
         sql = sql.replace("FLOAT", "DOUBLE")
+    # sql = rename_regex.sub(rename_func, sql)
     return sql
 
 def finish_sql(cur: MySQLCursor, sql):

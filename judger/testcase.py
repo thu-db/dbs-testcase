@@ -106,6 +106,7 @@ class Answer:
     def __init__(self, lines, flags: PointFlags):
         self.flags = flags
         self.headers = lines[0].split(",") if lines else []
+        assert_eq("Make sure no same name columns", len(self.headers), len(set(self.headers)))
         # Ignore order key not in the output headers
         flags.order_by = flags.order_by if flags.order_by and all(
             field in self.headers for field in flags.order_by) else None
@@ -124,13 +125,18 @@ class Answer:
         ]
 
     def to_regular_data(self):
-        regular_headers = sorted(self.headers)
-        return sorted(",".join(each[h] for h in regular_headers) for each in self.data)
+        if self.flags.colume_order:
+            return sorted(",".join(each.values()) for each in self.data)
+        if isinstance(self.headers, list):
+            regular_headers = sorted(self.headers)
+        else:
+            regular_headers = [x[0] for x in sorted(self.headers.items(), key=lambda x: x[1])]
+        return sorted(",".join((each[h] for h in regular_headers)) for each in self.data)
 
     def match_ordered_headers(self, headers):
         for i, (h1, h2) in enumerate(zip(self.headers, headers)):
             if "." not in h1:
-                h2 = h2.split(".", 1)[-1]            
+                h2 = h2.split(".", 1)[-1]
             assert_eq(f"Check header {i + 1}", h1, h2)
 
     def match_unordered_headers(self, headers):
