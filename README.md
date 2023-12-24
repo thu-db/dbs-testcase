@@ -39,6 +39,23 @@ python3 /path/to/dbs-testcase/run-ci.py
 
 简单来说你不必研究 `run-ci.py` 的工作原理，你只需要记住在你自己项目的 `dbs-testcase.yml` 中的 `commands` 都是以你项目的根目录为参考即可。
 
+考虑到部分同学可能不熟悉 `yaml` 格式，这里再给出一个更详细的关于 `flags` 的例子：
+
+```yml
+
+compile:
+  commands: make
+
+run:
+  commands: ./bin/mydb
+  flags:
+    - query
+    - data
+    - "null"
+```
+
+在这一例子中，一方面要注意多个 `flag` 的指定方法，另一方面由于在 `yaml` 文件中 `null` 作为关键字会被解释为空值，因此需要显式地加引号来表明这是一个字符串。
+
 ## 指定测例
 
 有两种情况下你可能希望指定几个测试点进行运行:
