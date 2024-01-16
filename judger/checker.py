@@ -199,7 +199,7 @@ class Checker:
                 lines = []
                 while True:
                     if self.prog.poll() is not None:
-                        raise Exception("Progarm exit")
+                        raise Exception(f"Progarm exit with code {self.prog.poll()}")
                     line: str = self.prog.stdout.readline()
                     if line.startswith("@"):
                         break
