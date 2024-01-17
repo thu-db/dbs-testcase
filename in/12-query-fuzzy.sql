@@ -2,7 +2,7 @@
 -- @Depends: optional
 -- @Flags: group
 -- @Description: Fuzzy query
--- @Score: 1
+-- @Score: 2
 USE DATASET;
 
 SELECT N_NAME FROM NATION WHERE N_NAME LIKE 'A%A';

@@ -2,7 +2,7 @@
 -- @Depends: optional
 -- @Flags: aggregate
 -- @Description: Aggregate query
--- @Score: 2
+-- @Score: 1
 USE DATASET;
 
 SELECT MIN(SUPPLIER.S_NATIONKEY),MAX(SUPPLIER.S_ACCTBAL),SUM(SUPPLIER.S_SUPPKEY),COUNT(*) FROM SUPPLIER WHERE SUPPLIER.S_SUPPKEY < 100;
