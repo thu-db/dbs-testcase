@@ -6,10 +6,6 @@
 
 USE DB2;
 
--- Notice: If student persists foreign key must be built on primary keys, then set ID primary key,
--- in which case student will get score punishment
--- punishment: -0.5pt (student won't see this line)
-
 CREATE TABLE T5 (ID INT, T2_ID1 INT, T2_ID2 INT, NAME VARCHAR(16), FOREIGN KEY (T2_ID1, T2_ID2) REFERENCES T2(ID1, ID2));
 
 -- Check basic insertion (and prepare data for next checks)
