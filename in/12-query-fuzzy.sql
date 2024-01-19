@@ -1,6 +1,6 @@
 -- @Name: query-fuzzy
 -- @Depends: optional
--- @Flags: group
+-- @Flags: fuzzy
 -- @Description: Fuzzy query
 -- @Score: 2
 USE DATASET;
