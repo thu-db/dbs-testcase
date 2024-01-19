@@ -179,9 +179,17 @@ class Answer:
         for i, (r1, r2) in enumerate(zip(self.to_regular_data(), other.to_regular_data())):
             assert_eq(f"Check row {i+1}", r1, r2)
         if self.flags.order_by:
-            # Note: Ordered field shouldn't be string, or it will be difficult to process
-            keys = [tuple(float(each[field]) for field in self.flags.order_by)
+            def find_colume_index(headers, field):
+                for i, header in enumerate(headers):
+                    if "." in field and field == header:
+                        return i
+                    elif "." not in field and field == header.split(".")[-1]:
+                        return i
+                else:
+                    assert_eq(f"Missing order by field '{field}'", True, False)
+            keys = [tuple(float(each[find_colume_index(other.headers, field)]) for field in self.flags.order_by)
                     for each in other.data]
+            # Note: Ordered field shouldn't be string, or it will be difficult to process
             if self.flags.reversed_order:
                 for i in range(1, len(keys)):
                     assert keys[i - 1] >= keys[i]
