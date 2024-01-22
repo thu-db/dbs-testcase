@@ -240,11 +240,11 @@ class Checker:
                     return False
                 # run depend_case successfully: continue
         try:
-            print("[INFO] Case", name, "is running")
+            print("[INFO] Case", name, "is running", flush=True)
             self._run_case(_case)
             self.scores += _case.score
             self.passed_cases.add(name)
-            print(colored(f"[INFO] Case {name} passed", "green"))
+            print(colored(f"[INFO] Case {name} passed", "green"), flush=True)
             return True
         except KeyboardInterrupt:
             self.kill()
