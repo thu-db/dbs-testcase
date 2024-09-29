@@ -47,7 +47,7 @@ replace-with = "mirror"\n\
 [source.mirror]\n\
 registry = "sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/"' >> .cargo/config
 
-ENV ANLTR_VERSION=4.13.1
+ENV ANLTR_VERSION=4.13.2
 
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip install --upgrade pip && \
