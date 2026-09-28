@@ -294,13 +294,15 @@ class Checker:
         cmd = self.cmd + ["--init"]
         with self.time_limiter:
             prog = subprocess.Popen(cmd, encoding='utf-8', cwd=self.cwd,
-                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                     stderr=sys.stderr, env=self.env)
             try:
                 prog.wait(60)
             except subprocess.TimeoutExpired:
                 prog.kill()
                 raise InitTimeout
+            if prog.returncode != 0:
+                raise subprocess.CalledProcessError(prog.returncode, cmd)
         print("[INFO] User program initialized")
 
     def start(self):

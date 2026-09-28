@@ -28,7 +28,7 @@ def assert_eq(msg, ans, out):
 
 def check_constraint_error(msg: str):
     err = None
-    errs = ["primary", "foreign", "unique"]
+    errs = ["primary", "foreign", "unique", "duplicate", "date"]
     for e in errs:
         if e in msg.lower():
             if err:

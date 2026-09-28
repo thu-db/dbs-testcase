@@ -34,8 +34,8 @@ def run(conf):
     user_prog_cwd = os.getcwd()
     env = os.environ.copy()
     env["USER_PROG_CWD"] = user_prog_cwd
-    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr,
-                    cwd=pathlib.Path(__file__).parent, env=env)
+    return subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr,
+                          cwd=pathlib.Path(__file__).parent, env=env).returncode
 
 if __name__ == "__main__":
     if os.environ.get("GITLAB_CI"):
@@ -46,4 +46,4 @@ if __name__ == "__main__":
     with open("./testcase.yml") as file:
         conf = yaml.load(file, Loader=yaml.FullLoader)
     compile(conf["compile"])
-    run(conf["run"])
+    sys.exit(run(conf["run"]))

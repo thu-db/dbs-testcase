@@ -108,7 +108,7 @@ class Answer:
         self.flags = flags
         self.headers = lines[0].split(",") if lines else []
         # Ignore order key not in the output headers
-        flags.order_by = flags.order_by if flags.order_by and all(
+        self.order_by = flags.order_by if flags.order_by and all(
             field in self.headers for field in flags.order_by) else None
         self.constraint = None
         if flags.is_desc:
@@ -178,7 +178,7 @@ class Answer:
             return
         for i, (r1, r2) in enumerate(zip(self.to_regular_data(), other.to_regular_data())):
             assert_eq(f"Check row {i+1}", r1, r2)
-        if self.flags.order_by:
+        if self.order_by:
             def find_colume_index(headers, field):
                 for i, header in enumerate(headers):
                     if "." in field and field == header:
@@ -187,7 +187,7 @@ class Answer:
                         return i
                 else:
                     assert_eq(f"Missing order by field '{field}'", True, False)
-            keys = [tuple(float(each[find_colume_index(other.headers, field)]) for field in self.flags.order_by)
+            keys = [tuple(float(each[find_colume_index(other.headers, field)]) for field in self.order_by)
                     for each in other.data]
             # Note: Ordered field shouldn't be string, or it will be difficult to process
             if self.flags.reversed_order:
@@ -200,7 +200,7 @@ class Answer:
 
 class TestPoint:
     order_regex = re.compile(
-        r"ORDER\s+BY\s+([^, ]*(?:\s*,\s*[^, ]*)*)\s+(ASC|DESC)?")
+        r"ORDER\s+BY\s+([^,;\s]+(?:\s*,\s*[^,;\s]+)*)(?:\s+(ASC|DESC))?(?=\s|;|$)")
     selector_regex = re.compile(r"SELECT(.*?)FROM")
     desc_regex = re.compile(r"DESC\s")
 
